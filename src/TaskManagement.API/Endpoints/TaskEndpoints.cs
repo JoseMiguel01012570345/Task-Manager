@@ -7,7 +7,7 @@ public static class TaskEndpoints
 {
     public static IEndpointRouteBuilder MapTaskEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/v1/tasks").WithTags("Tasks").RequireAuthorization();
+        var group = app.MapGroup("/api/v1/tasks").WithTags("Tasks").RequireAuthorization("TaskAccess");
 
         group.MapGet("/", async (
             string? status,

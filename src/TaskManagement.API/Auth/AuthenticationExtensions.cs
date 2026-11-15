@@ -55,6 +55,8 @@ public static class AuthenticationExtensions
             options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(SmartScheme)
                 .RequireAuthenticatedUser()
                 .Build();
+            options.AddPolicy("Administrator", policy => policy.RequireRole("Administrator"));
+            options.AddPolicy("TaskAccess", policy => policy.RequireAuthenticatedUser());
         });
 
         return services;
