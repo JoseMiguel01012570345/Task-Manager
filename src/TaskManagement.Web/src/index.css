@@ -1,0 +1,33 @@
+:root {
+  font-family: "Segoe UI", sans-serif;
+  color: #1c2430;
+  background: #f4f6f8;
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: #12324d;
+  color: white;
+}
+
+header a {
+  color: white;
+}
+
+main {
+  padding: 1.5rem;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
