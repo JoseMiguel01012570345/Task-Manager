@@ -49,6 +49,7 @@ builder.Services.AddTaskAuthentication(builder.Configuration, builder.Environmen
 builder.Services.AddLocalCors();
 builder.Services.AddTaskRateLimiting();
 builder.Services.AddTaskTelemetry(builder.Configuration);
+builder.Services.AddTaskHealthChecks();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -70,6 +71,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi().AllowAnonymous();
 }
 
+app.MapTaskHealthChecks();
 app.MapTaskEndpoints();
 
 app.Run();
