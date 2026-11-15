@@ -62,6 +62,16 @@ public static class TaskEndpoints
             return Results.Ok(TaskResponse.From(task));
         });
 
+        group.MapDelete("/{id:guid}", async (
+            Guid id,
+            uint? version,
+            DeleteTask.Handler handler,
+            CancellationToken cancellationToken) =>
+        {
+            await handler.Handle(new DeleteTask.Command(id, version), cancellationToken).ConfigureAwait(false);
+            return Results.NoContent();
+        });
+
         group.MapPut("/{id:guid}", async (
             Guid id,
             UpdateTaskRequest request,
