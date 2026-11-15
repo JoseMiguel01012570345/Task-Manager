@@ -1,0 +1,22 @@
+services:
+  traefik:
+    image: traefik:v3.2.0
+    command: ["--configFile=/etc/traefik/static.yml"]
+    ports:
+      - "8088:80"
+    volumes:
+      - ./traefik/static.yml:/etc/traefik/static.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    networks:
+      - edge
+    restart: unless-stopped
+
+  whoami:
+    image: traefik/whoami:v1.10.3
+    networks:
+      - edge
+    restart: unless-stopped
+
+networks:
+  edge:
+    name: taskmanagement-edge
