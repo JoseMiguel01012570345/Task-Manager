@@ -56,6 +56,7 @@ public class CreateTaskHandlerTests
             repository,
             new TestCurrentUser("admin-user", isAdministrator: true),
             new TestClock(Now),
+            new RecordingAuditLog(),
             new CreateTaskValidator(new TestClock(Now)));
 
         var result = await handler.Handle(
@@ -71,5 +72,6 @@ public class CreateTaskHandlerTests
             repository,
             new TestCurrentUser("dev-user"),
             new TestClock(Now),
+            new RecordingAuditLog(),
             new CreateTaskValidator(new TestClock(Now)));
 }

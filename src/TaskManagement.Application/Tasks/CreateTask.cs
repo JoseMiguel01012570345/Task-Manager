@@ -15,6 +15,7 @@ public static class CreateTask
         ITaskRepository repository,
         ICurrentUser currentUser,
         IClock clock,
+        IAuditLog auditLog,
         IValidator<Command> validator)
     {
         public async Task<Result> Handle(Command command, CancellationToken cancellationToken)
@@ -40,6 +41,7 @@ public static class CreateTask
                 now);
 
             await repository.AddAsync(task, cancellationToken).ConfigureAwait(false);
+            await auditLog.WriteAsync("TaskCreated", task.Id, currentUser.UserId, task.Title, cancellationToken).ConfigureAwait(false);
             await repository.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return new Result(task);
         }

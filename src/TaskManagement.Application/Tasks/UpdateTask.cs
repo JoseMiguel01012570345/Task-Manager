@@ -19,6 +19,7 @@ public static class UpdateTask
         ITaskRepository repository,
         ICurrentUser currentUser,
         IClock clock,
+        IAuditLog auditLog,
         IValidator<Command> validator)
     {
         public async Task<TaskItem> Handle(Command command, CancellationToken cancellationToken)
@@ -48,6 +49,7 @@ public static class UpdateTask
                 command.Version!.Value,
                 clock.UtcNow);
 
+            await auditLog.WriteAsync("TaskUpdated", task.Id, currentUser.UserId, task.Title, cancellationToken).ConfigureAwait(false);
             await repository.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return task;
         }

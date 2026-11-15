@@ -29,7 +29,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddSingleton<IClock, SystemClock>();
-        services.AddScoped<IAuditLog, NoOpAuditLog>();
+        services.AddScoped<IAuditLog, EfAuditLog>();
 
         if (seedDevelopmentData)
         {

@@ -57,5 +57,5 @@ public class UpdateTaskHandlerTests
     }
 
     private static UpdateTask.Handler HandlerFor(FakeTaskRepository repository, string userId) =>
-        new(repository, new TestCurrentUser(userId), new TestClock(Now), new UpdateTaskValidator(new TestClock(Now)));
+        new(repository, new TestCurrentUser(userId), new TestClock(Now), new RecordingAuditLog(), new UpdateTaskValidator(new TestClock(Now)));
 }

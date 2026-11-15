@@ -33,13 +33,13 @@ public static class ChangeTaskStatus
             var next = Enum.Parse<TaskState>(command.Status!, ignoreCase: true);
             var previous = task.Status;
             task.ChangeStatus(next, command.Version!.Value, clock.UtcNow);
-            await repository.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await auditLog.WriteAsync(
                 "TaskStatusChanged",
                 task.Id,
                 currentUser.UserId,
                 $"{previous} -> {next}",
                 cancellationToken).ConfigureAwait(false);
+            await repository.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return task;
         }
     }
