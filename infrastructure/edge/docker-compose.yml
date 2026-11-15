@@ -8,15 +8,19 @@ services:
       - ./traefik/static.yml:/etc/traefik/static.yml:ro
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     networks:
-      - edge
+      - public
+      - internal
     restart: unless-stopped
 
   whoami:
     image: traefik/whoami:v1.10.3
     networks:
-      - edge
+      - internal
     restart: unless-stopped
 
 networks:
-  edge:
-    name: taskmanagement-edge
+  public:
+    name: taskmanagement-public
+  internal:
+    name: taskmanagement-internal
+    internal: true
