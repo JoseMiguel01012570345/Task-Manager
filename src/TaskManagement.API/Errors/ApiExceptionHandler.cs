@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using TaskManagement.Application.Exceptions;
+using TaskManagement.Domain.Exceptions;
 
 namespace TaskManagement.API.Errors;
 
@@ -22,6 +23,15 @@ public sealed class ApiExceptionHandler : IExceptionHandler
                 title: "Not Found",
                 detail: notFound.Message,
                 statusCode: StatusCodes.Status404NotFound).ExecuteAsync(httpContext).ConfigureAwait(false);
+            return true;
+        }
+
+        if (exception is ConcurrencyException conflict)
+        {
+            await Results.Problem(
+                title: "Conflict",
+                detail: conflict.Message,
+                statusCode: StatusCodes.Status409Conflict).ExecuteAsync(httpContext).ConfigureAwait(false);
             return true;
         }
 

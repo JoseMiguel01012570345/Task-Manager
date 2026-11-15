@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TaskManagement.Application.Tasks;
+using TaskManagement.Domain.Exceptions;
 using TaskManagement.Domain.Tasks;
 
 namespace TaskManagement.Infrastructure.Persistence;
@@ -47,6 +48,15 @@ internal sealed class TaskRepository(AppDbContext db) : ITaskRepository
         return new PagedTasks(items, filter.Page, filter.PageSize, total);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
-        db.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ConcurrencyException();
+        }
+    }
 }
