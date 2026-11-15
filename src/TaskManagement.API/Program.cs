@@ -29,6 +29,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseSecurityHeaders();
 app.UseJsonRequests();
 app.UseAuthentication();
 app.UseAuthorization();
