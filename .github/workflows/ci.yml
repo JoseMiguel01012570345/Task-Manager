@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Unit tests
+        run: dotnet test tests/Unit/TaskManagement.UnitTests.csproj
+      - name: Architecture tests
+        run: dotnet test tests/Architecture/TaskManagement.ArchitectureTests.csproj
+      - name: Integration tests
+        run: dotnet test tests/Integration/TaskManagement.IntegrationTests.csproj
+
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f src/TaskManagement.API/Dockerfile -t taskmanagement-api:ci .
+      - name: Build web image
+        run: docker build -f src/TaskManagement.Web/Dockerfile -t taskmanagement-web:ci src/TaskManagement.Web
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan the repository for critical vulnerabilities
+        run: docker run --rm -v ${{ github.workspace }}:/src aquasec/trivy:0.58.1 fs --severity CRITICAL --ignore-unfixed --exit-code 1 /src
