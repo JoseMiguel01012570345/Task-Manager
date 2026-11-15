@@ -1,0 +1,14 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: postgres-pod-kill
+  namespace: taskmanagement
+spec:
+  action: pod-kill
+  mode: one
+  duration: 20s
+  selector:
+    namespaces:
+      - taskmanagement
+    labelSelectors:
+      app: postgres
