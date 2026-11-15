@@ -4,7 +4,8 @@ using System.Text.Json;
 
 namespace TaskManagement.IntegrationTests;
 
-public sealed class TaskApiTests : IClassFixture<ApiFactory>
+[Collection(ApiCollection.Name)]
+public sealed class TaskApiTests
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
