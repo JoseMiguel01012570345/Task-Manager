@@ -4,7 +4,7 @@ using TaskManagement.Domain.Exceptions;
 
 namespace TaskManagement.API.Errors;
 
-public sealed class ApiExceptionHandler : IExceptionHandler
+public sealed class ApiExceptionHandler(IHostEnvironment environment) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -17,42 +17,24 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             return true;
         }
 
-        if (exception is NotFoundException notFound)
+        var (status, title, detail) = exception switch
         {
-            await Results.Problem(
-                title: "Not Found",
-                detail: notFound.Message,
-                statusCode: StatusCodes.Status404NotFound).ExecuteAsync(httpContext).ConfigureAwait(false);
-            return true;
-        }
+            UnauthorizedException unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized", unauthorized.Message),
+            ForbiddenException forbidden => (StatusCodes.Status403Forbidden, "Forbidden", forbidden.Message),
+            NotFoundException notFound => (StatusCodes.Status404NotFound, "Not Found", notFound.Message),
+            ConcurrencyException conflict => (StatusCodes.Status409Conflict, "Conflict", conflict.Message),
+            DomainException domain => (StatusCodes.Status422UnprocessableEntity, "Unprocessable Entity", domain.Message),
+            _ => (StatusCodes.Status500InternalServerError, "Internal Server Error", UnexpectedDetail(exception)),
+        };
 
-        if (exception is DomainException domain && exception is not ConcurrencyException)
-        {
-            await Results.Problem(
-                title: "Unprocessable Entity",
-                detail: domain.Message,
-                statusCode: StatusCodes.Status422UnprocessableEntity).ExecuteAsync(httpContext).ConfigureAwait(false);
-            return true;
-        }
-
-        if (exception is ConcurrencyException conflict)
-        {
-            await Results.Problem(
-                title: "Conflict",
-                detail: conflict.Message,
-                statusCode: StatusCodes.Status409Conflict).ExecuteAsync(httpContext).ConfigureAwait(false);
-            return true;
-        }
-
-        if (exception is ForbiddenException forbidden)
-        {
-            await Results.Problem(
-                title: "Forbidden",
-                detail: forbidden.Message,
-                statusCode: StatusCodes.Status403Forbidden).ExecuteAsync(httpContext).ConfigureAwait(false);
-            return true;
-        }
-
-        return false;
+        await Results.Problem(title: title, detail: detail, statusCode: status)
+            .ExecuteAsync(httpContext)
+            .ConfigureAwait(false);
+        return true;
     }
+
+    private string UnexpectedDetail(Exception exception) =>
+        environment.IsDevelopment()
+            ? exception.Message
+            : "An unexpected error occurred.";
 }

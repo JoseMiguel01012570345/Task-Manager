@@ -9,7 +9,13 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(
     builder.Configuration,
     seedDevelopmentData: builder.Environment.IsDevelopment());
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    };
+});
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddOpenApi();
 
