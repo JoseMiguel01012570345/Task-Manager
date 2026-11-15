@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Formatting.Compact;
 using TaskManagement.API.Auth;
@@ -53,6 +54,14 @@ builder.Services.AddTaskHealthChecks();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (args.Contains("--migrate"))
+{
+    using var scope = app.Services.CreateScope();
+    var database = scope.ServiceProvider.GetRequiredService<TaskManagement.Infrastructure.Persistence.AppDbContext>();
+    database.Database.Migrate();
+    return;
+}
 
 app.UseSerilogRequestLogging(options =>
 {

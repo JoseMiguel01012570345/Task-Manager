@@ -13,3 +13,5 @@ kubectl apply -f infrastructure/k8s/ingress.yaml
 ```
 
 La contraseña de la base en el Secret es la del laboratorio, la misma que ya está en Compose.
+
+Las migraciones corren en el Job `migrate` (`dotnet TaskManagement.API.dll --migrate`). Las réplicas no migran al arrancar. El Job se aplica después del Secret y antes de dar por listo el despliegue.

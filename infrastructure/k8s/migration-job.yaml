@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  namespace: taskmanagement
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: taskmanagement-api:local
+          imagePullPolicy: IfNotPresent
+          args: ["--migrate"]
+          env:
+            - name: ConnectionStrings__TaskManagement
+              valueFrom:
+                secretKeyRef:
+                  name: api
+                  key: connection
