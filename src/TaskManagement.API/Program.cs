@@ -1,3 +1,5 @@
+using TaskManagement.API.Endpoints;
+using TaskManagement.API.Errors;
 using TaskManagement.Application;
 using TaskManagement.Infrastructure;
 
@@ -7,14 +9,20 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(
     builder.Configuration,
     seedDevelopmentData: builder.Environment.IsDevelopment());
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.MapTaskEndpoints();
 
 app.Run();
 
