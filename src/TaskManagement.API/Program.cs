@@ -1,10 +1,15 @@
 using TaskManagement.API.Auth;
 using TaskManagement.API.Endpoints;
 using TaskManagement.API.Errors;
+using TaskManagement.API.Security;
 using TaskManagement.Application;
 using TaskManagement.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = JsonRequestMiddleware.MaxBodyBytes;
+});
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(
@@ -24,6 +29,7 @@ builder.Services.AddOpenApi();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseJsonRequests();
 app.UseAuthentication();
 app.UseAuthorization();
 
