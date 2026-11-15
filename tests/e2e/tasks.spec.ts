@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
-const base = process.env.BASE_URL || "http://localhost:8090";
+const base = process.env.BASE_URL || "http://localhost:8088";
 const password = process.env.DEV_USER_PASSWORD || "lab-dev-user";
 
 test("create and read a task", async ({ request }) => {

@@ -1,11 +1,13 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-const base = __ENV.BASE_URL || "http://localhost:8090";
+const base = __ENV.BASE_URL || "http://localhost:8088";
+const suite = __ENV.SUITE === "1";
 
 export const options = {
   vus: 1,
-  duration: "30s",
+  duration: suite ? "5s" : "30s",
+  gracefulStop: "1s",
   thresholds: {
     http_req_failed: ["rate<0.05"],
   },

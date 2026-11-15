@@ -22,7 +22,7 @@ public sealed class ClusterApi : IAsyncLifetime
     public ClusterApi()
     {
         var configured = Environment.GetEnvironmentVariable(BaseUrlVariable);
-        var text = string.IsNullOrWhiteSpace(configured) ? "http://localhost:8090" : configured.Trim();
+        var text = string.IsNullOrWhiteSpace(configured) ? "http://localhost:8088" : configured.Trim();
         BaseUri = new Uri(text.TrimEnd('/') + "/");
     }
 

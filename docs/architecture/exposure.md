@@ -1,6 +1,6 @@
 # Exposición
 
-Traefik está en la red pública, donde publica `8088`, y en la red interna `taskmanagement-internal`. El destino de la aplicación solo está en esa red interna, así que no tiene puerto en el host ni salida directa. No hay una ruta de la API que evite Coraza.
+Traefik está en la red pública, donde publica `8088`, y en la red interna `taskmanagement-internal`. El clúster k3d no publica la aplicación en el host. Traefik se une a la red `k3d-taskmanagement` y reenvía a los nodos, donde escucha el ingreso del clúster. No hay una ruta de la API que evite Coraza.
 
 ```mermaid
 flowchart LR

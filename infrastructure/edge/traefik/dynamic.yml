@@ -28,11 +28,15 @@ http:
     api:
       loadBalancer:
         servers:
-          - url: http://host.docker.internal:8090
+          - url: http://k3d-taskmanagement-server-0:80
+          - url: http://k3d-taskmanagement-agent-0:80
+          - url: http://k3d-taskmanagement-agent-1:80
     web:
       loadBalancer:
         servers:
-          - url: http://host.docker.internal:8090
+          - url: http://k3d-taskmanagement-server-0:80
+          - url: http://k3d-taskmanagement-agent-0:80
+          - url: http://k3d-taskmanagement-agent-1:80
 
   middlewares:
     waf-detect:

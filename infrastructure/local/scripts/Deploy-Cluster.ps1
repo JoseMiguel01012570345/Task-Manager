@@ -100,3 +100,4 @@ kubectl wait --for=condition=ready pod -l app=api -n taskmanagement --timeout=18
 kubectl wait --for=condition=ready pod -l app=web -n taskmanagement --timeout=180s
 kubectl wait --for=condition=complete job/postgres-backup-now -n taskmanagement --timeout=180s
 kubectl get pods -n taskmanagement -o wide
+& (Join-Path $PSScriptRoot "Connect-Edge.ps1")

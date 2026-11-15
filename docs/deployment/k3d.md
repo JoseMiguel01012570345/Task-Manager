@@ -1,6 +1,6 @@
 # Clúster local
 
-El laboratorio de Kubernetes es un clúster k3d con un servidor y dos agentes. k3s no instala su Traefik: el ingreso lo define el manifiesto del proyecto. El balanceador publica el puerto 8088, el mismo ingreso que usa Compose.
+El laboratorio de Kubernetes es un clúster k3d con un servidor y dos agentes. k3s no instala su Traefik: el ingreso lo define el manifiesto del proyecto. El balanceador no publica ese ingreso en el host. La aplicación se abre solo por Traefik, en `http://localhost:8088`.
 
 ```powershell
 ./infrastructure/local/scripts/Deploy-Cluster.ps1

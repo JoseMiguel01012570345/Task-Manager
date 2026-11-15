@@ -1,5 +1,6 @@
 services:
   traefik:
+    container_name: taskmanagement-edge-traefik
     image: traefik:v3.2.0
     command: ["--configFile=/etc/traefik/static.yml"]
     ports:

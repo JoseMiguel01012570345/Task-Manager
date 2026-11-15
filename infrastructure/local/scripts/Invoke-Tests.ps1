@@ -9,24 +9,8 @@ if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
 kubectl config use-context k3d-taskmanagement | Out-Null
 kubectl get nodes --request-timeout=10s | Out-Null
 
-$base = "http://localhost:8090"
-$ready = $false
-for ($attempt = 0; $attempt -lt 30; $attempt++) {
-    try {
-        $response = Invoke-WebRequest -Uri "$base/health/ready" -UseBasicParsing -TimeoutSec 5
-        if ($response.StatusCode -eq 200) {
-            $ready = $true
-            break
-        }
-    }
-    catch {
-        Start-Sleep -Seconds 2
-    }
-}
-
-if (-not $ready) {
-    throw "El cluster k3d no responde en $base/health/ready. Ejecuta Deploy-Cluster.ps1."
-}
+& (Join-Path $PSScriptRoot "Connect-Edge.ps1")
+$base = "http://localhost:8088"
 
 $envFile = Join-Path $root ".env"
 if (Test-Path $envFile) {

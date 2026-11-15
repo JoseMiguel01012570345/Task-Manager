@@ -4,10 +4,6 @@ metadata:
   name: taskmanagement
 servers: 1
 agents: 2
-ports:
-  - port: 8090:80
-    nodeFilters:
-      - loadbalancer
 options:
   k3s:
     extraArgs:

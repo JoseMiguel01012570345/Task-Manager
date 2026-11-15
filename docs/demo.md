@@ -51,7 +51,7 @@ La primera responde la aplicación (o 502 si la API aún no está en esa red). L
 
 ## 5. Observabilidad
 
-Grafana queda dentro del clúster, en `http://localhost:8090/grafana/`, con el usuario `admin` y la contraseña de `.env.example`. Los tableros están en la carpeta Task Management.
+Grafana queda dentro del clúster, en `http://localhost:8088/grafana/`, con el usuario `admin` y la contraseña de `.env.example`. Los tableros están en la carpeta Task Management.
 
 ## 6. Lo que esta guía no ejecuta
 

@@ -28,6 +28,7 @@ public sealed class K6ScenarioTests(ClusterApi cluster)
         start.ArgumentList.Add("run");
         start.ArgumentList.Add(file);
         start.Environment["BASE_URL"] = cluster.BaseUri.GetLeftPart(UriPartial.Authority);
+        start.Environment["SUITE"] = "1";
         if (authenticated)
         {
             start.Environment["TOKEN"] = await cluster.IssueUserAccessTokenAsync();

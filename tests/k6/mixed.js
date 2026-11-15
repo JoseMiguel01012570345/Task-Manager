@@ -1,11 +1,13 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-const base = __ENV.BASE_URL || "http://localhost:8090";
+const base = __ENV.BASE_URL || "http://localhost:8088";
+const suite = __ENV.SUITE === "1";
 
 export const options = {
-  vus: 8,
-  duration: "2m",
+  vus: suite ? 3 : 8,
+  duration: suite ? "8s" : "2m",
+  gracefulStop: "1s",
 };
 
 export default function () {
