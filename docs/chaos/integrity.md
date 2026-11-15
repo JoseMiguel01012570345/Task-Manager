@@ -48,7 +48,7 @@ El volcado contiene `public.tasks`, `public.audit_records` y `public."__EFMigrat
 
 ### Evidencias
 
-El volcado de comprobación quedó en `infrastructure/local/backups`, ignorado por git. El script repetible es `infrastructure/local/scripts/Backup-Postgres.ps1`.
+El volcado de comprobación quedó en `infrastructure/local/backups`, ignorado por git.
 
 ### Observaciones y limitaciones
 

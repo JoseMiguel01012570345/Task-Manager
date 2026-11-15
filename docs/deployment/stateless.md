@@ -2,11 +2,7 @@
 
 La API no guarda la sesión en disco ni en memoria compartida. El token viaja en `Authorization` y cada réplica puede atender cualquier petición. Los contadores de límite de tasa viven en la memoria de la réplica hasta que Redis quede cableado; perder una réplica no pierde tareas.
 
-Lo único durable es PostgreSQL. En el clúster es un StatefulSet con un volumen de 1 Gi. El Service es headless y no se publica en el nodo. La copia local se hace con `infrastructure/local/scripts/Backup-Postgres.ps1`. El archivo queda en `infrastructure/local/backups` y no se versiona. Para restaurar esa copia en el laboratorio:
-
-```powershell
-Get-Content infrastructure/local/backups/<archivo>.sql | docker exec -i database-postgres-1 psql -U taskmanagement -d taskmanagement
-```
+Lo único durable es PostgreSQL. En el clúster es un StatefulSet con un volumen de 1 Gi. El Service es headless y no se publica en el nodo. La copia la hace el CronJob `postgres-backup` y queda en el volumen `postgres-backups`.
 
 Comprobación de que la API no necesita disco local:
 

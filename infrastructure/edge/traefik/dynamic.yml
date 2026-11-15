@@ -28,11 +28,11 @@ http:
     api:
       loadBalancer:
         servers:
-          - url: http://api:8080
+          - url: http://host.docker.internal:8090
     web:
       loadBalancer:
         servers:
-          - url: http://web:8080
+          - url: http://host.docker.internal:8090
 
   middlewares:
     waf-detect:

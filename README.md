@@ -25,14 +25,13 @@ npm run dev
 
 El frontend queda en `http://localhost:5173` y proxya `/api` hacia la API.
 
-## Laboratorio con Compose
+## Laboratorio en k3d
 
 ```powershell
-./infrastructure/local/docker/keycloak/render-realm.ps1
-./infrastructure/local/scripts/Start-Compose.ps1
+./infrastructure/local/scripts/Deploy-Cluster.ps1
 ```
 
-La aplicación entra por `http://localhost:8088`. Keycloak publica `8080` para emitir tokens. `./infrastructure/local/scripts/Stop-Compose.ps1` apaga ese conjunto.
+Ese script crea el clúster y aplica los manifiestos. `./infrastructure/local/scripts/Remove-K3dCluster.ps1` lo elimina.
 
 ## Pruebas
 

@@ -5,7 +5,7 @@ metadata:
 servers: 1
 agents: 2
 ports:
-  - port: 8088:80
+  - port: 8090:80
     nodeFilters:
       - loadbalancer
 options:
@@ -14,3 +14,8 @@ options:
       - arg: --disable=traefik
         nodeFilters:
           - server:*
+      # k3s 1.35 exits on cgroup v1 unless this kubelet check is disabled.
+      - arg: --kubelet-arg=fail-cgroupv1=false
+        nodeFilters:
+          - server:*
+          - agent:*
