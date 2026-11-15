@@ -9,11 +9,25 @@ using TaskManagement.Application;
 using TaskManagement.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Host.UseSerilog((context, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .Enrich.FromLogContext()
-    .Enrich.WithProperty("Application", "TaskManagement.API")
-    .WriteTo.Console(new CompactJsonFormatter()));
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "TaskManagement.API")
+        .WriteTo.Console(new CompactJsonFormatter());
+
+    var endpoint = context.Configuration["OpenTelemetry:OtlpEndpoint"];
+    if (Uri.TryCreate(endpoint, UriKind.Absolute, out var otlp))
+    {
+        configuration.WriteTo.OpenTelemetry(options =>
+        {
+            options.Endpoint = otlp.AbsoluteUri;
+            options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.Grpc;
+            options.ResourceAttributes["service.name"] = TelemetryExtensions.ServiceName;
+        });
+    }
+});
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = JsonRequestMiddleware.MaxBodyBytes;
