@@ -1,6 +1,6 @@
 # Despliegue
 
-Los manifiestos de `infrastructure/k8s` crean el namespace `taskmanagement`, la API y el frontend. Los Service son ClusterIP: la API no publica un puerto del nodo. El Ingress usa la clase `traefik` y es la entrada del clúster.
+Los manifiestos de `infrastructure/k8s` crean el namespace `taskmanagement`, la API y el frontend. Cada uno arranca con dos réplicas para que una caída no deje el servicio sin proceso. Los Service son ClusterIP: la API no publica un puerto del nodo. El Ingress usa la clase `traefik` y es la entrada del clúster.
 
 Las imágenes locales se importan antes de aplicar los manifiestos:
 
