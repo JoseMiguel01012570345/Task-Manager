@@ -51,11 +51,7 @@ La primera responde la aplicación (o 502 si la API aún no está en esa red). L
 
 ## 5. Observabilidad
 
-```powershell
-docker compose -f infrastructure/observability/docker-compose.yml up -d
-```
-
-Grafana: `http://localhost:3000` con el usuario `admin` y la contraseña de `.env.example`. Los tableros están en la carpeta Task Management.
+Grafana queda dentro del clúster, en `http://localhost:8090/grafana/`, con el usuario `admin` y la contraseña de `.env.example`. Los tableros están en la carpeta Task Management.
 
 ## 6. Lo que esta guía no ejecuta
 

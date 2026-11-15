@@ -22,7 +22,11 @@ $images = @(
     "taskmanagement-web:local",
     "postgres:16-alpine",
     "quay.io/keycloak/keycloak:26.0",
-    "traefik:v3.2.0"
+    "traefik:v3.2.0",
+    "otel/opentelemetry-collector-contrib:0.139.0",
+    "prom/prometheus:v3.2.1",
+    "grafana/loki:3.4.2",
+    "grafana/grafana:11.6.0"
 )
 foreach ($image in $images) {
     & k3d image import $image -c taskmanagement
@@ -34,7 +38,8 @@ $beforeMigrate = @(
     "namespace.yaml",
     "postgres.yaml",
     "api.yaml",
-    "keycloak.yaml"
+    "keycloak.yaml",
+    "observability.yaml"
 )
 $afterMigrate = @(
     "web.yaml",
@@ -61,6 +66,22 @@ if (-not (Test-Path $realmFile)) {
 }
 kubectl create configmap keycloak-realm -n taskmanagement --from-file="taskmanagement-realm.json=$realmFile" --dry-run=client -o yaml | kubectl apply -f -
 kubectl create secret generic keycloak-admin -n taskmanagement --from-literal="password=$adminPassword" --dry-run=client -o yaml | kubectl apply -f -
+$grafanaPassword = "lab-grafana-admin"
+if (Test-Path $envFile) {
+    foreach ($line in Get-Content $envFile) {
+        if ($line -match '^\s*GRAFANA_ADMIN_PASSWORD=(.*)$') {
+            $grafanaPassword = $Matches[1].Trim()
+        }
+    }
+}
+kubectl create secret generic grafana-admin -n taskmanagement --from-literal="password=$grafanaPassword" --dry-run=client -o yaml | kubectl apply -f -
+$observability = Join-Path $root "infrastructure/observability"
+kubectl create configmap otel-collector-config -n taskmanagement --from-file="config.yaml=$(Join-Path $observability 'otel-collector-config.yaml')" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap prometheus-config -n taskmanagement --from-file="prometheus.yml=$(Join-Path $observability 'prometheus.yml')" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap loki-config -n taskmanagement --from-file="loki-config.yaml=$(Join-Path $observability 'loki-config.yaml')" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap grafana-datasources -n taskmanagement --from-file="datasources.yaml=$(Join-Path $observability 'grafana/provisioning/datasources/datasources.yaml')" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap grafana-dashboard-provider -n taskmanagement --from-file="dashboards.yaml=$(Join-Path $observability 'grafana/provisioning/dashboards/dashboards.yaml')" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create configmap grafana-dashboards -n taskmanagement --from-file="$(Join-Path $observability 'grafana/dashboards/api-overview.json')" --from-file="$(Join-Path $observability 'grafana/dashboards/system-resilience.json')" --dry-run=client -o yaml | kubectl apply -f -
 
 foreach ($manifest in $beforeMigrate) {
     kubectl apply -f (Join-Path $root "infrastructure/k8s/$manifest")

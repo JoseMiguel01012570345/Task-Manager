@@ -58,6 +58,8 @@ spec:
               value: taskmanagement-api
             - name: Authentication__RequireHttpsMetadata
               value: "false"
+            - name: OpenTelemetry__OtlpEndpoint
+              value: http://otel-collector.taskmanagement.svc.cluster.local:4317
           readinessProbe:
             httpGet:
               path: /health/ready

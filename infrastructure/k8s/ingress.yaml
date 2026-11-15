@@ -22,6 +22,13 @@ spec:
                 name: api
                 port:
                   number: 8080
+          - path: /grafana
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
           - path: /health
             pathType: Prefix
             backend:
