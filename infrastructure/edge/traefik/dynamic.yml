@@ -6,21 +6,33 @@ http:
         - web
       middlewares:
         - waf-block
-      service: app
+      service: web
       priority: 100
+    api:
+      rule: PathPrefix(`/api`) || PathPrefix(`/health`)
+      entryPoints:
+        - web
+      middlewares:
+        - waf-detect
+      service: api
+      priority: 50
     app:
       rule: PathPrefix(`/`)
       entryPoints:
         - web
       middlewares:
         - waf-detect
-      service: app
+      service: web
 
   services:
-    app:
+    api:
       loadBalancer:
         servers:
-          - url: http://whoami:80
+          - url: http://api:8080
+    web:
+      loadBalancer:
+        servers:
+          - url: http://web:8080
 
   middlewares:
     waf-detect:

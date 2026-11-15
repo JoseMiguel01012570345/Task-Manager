@@ -12,12 +12,6 @@ services:
       - internal
     restart: unless-stopped
 
-  whoami:
-    image: traefik/whoami:v1.10.3
-    networks:
-      - internal
-    restart: unless-stopped
-
 networks:
   public:
     name: taskmanagement-public
