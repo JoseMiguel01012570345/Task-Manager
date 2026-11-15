@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<CreateTaskValidator>();
         services.AddScoped<CreateTask.Handler>();
         services.AddScoped<ListTasks.Handler>();
+        services.AddScoped<GetTask.Handler>();
         return services;
     }
 }

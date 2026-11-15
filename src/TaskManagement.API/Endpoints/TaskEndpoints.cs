@@ -28,6 +28,15 @@ public static class TaskEndpoints
                 result.TotalCount));
         });
 
+        group.MapGet("/{id:guid}", async (
+            Guid id,
+            GetTask.Handler handler,
+            CancellationToken cancellationToken) =>
+        {
+            var task = await handler.Handle(id, cancellationToken).ConfigureAwait(false);
+            return Results.Ok(TaskResponse.From(task));
+        });
+
         group.MapPost("/", async (
             CreateTaskRequest request,
             CreateTask.Handler handler,

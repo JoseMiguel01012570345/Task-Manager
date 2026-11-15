@@ -25,8 +25,7 @@ public static class CreateTask
                 throw new RequestValidationException(validation);
             }
 
-            if (!currentUser.IsAdministrator &&
-                !string.Equals(command.AssigneeId, currentUser.UserId, StringComparison.Ordinal))
+            if (!TaskAccess.CanAssignTo(currentUser, command.AssigneeId!))
             {
                 throw new ForbiddenException("A user can only assign a new task to themselves.");
             }

@@ -16,6 +16,15 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             return true;
         }
 
+        if (exception is NotFoundException notFound)
+        {
+            await Results.Problem(
+                title: "Not Found",
+                detail: notFound.Message,
+                statusCode: StatusCodes.Status404NotFound).ExecuteAsync(httpContext).ConfigureAwait(false);
+            return true;
+        }
+
         if (exception is ForbiddenException forbidden)
         {
             await Results.Problem(
