@@ -1,0 +1,14 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: api-pod-kill
+  namespace: taskmanagement
+spec:
+  action: pod-kill
+  mode: one
+  duration: 30s
+  selector:
+    namespaces:
+      - taskmanagement
+    labelSelectors:
+      app: api
