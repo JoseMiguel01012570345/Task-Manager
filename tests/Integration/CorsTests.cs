@@ -1,35 +1,25 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using TaskManagement.API.Security;
+using System.Net;
 
 namespace TaskManagement.IntegrationTests;
 
-public class CorsTests
+[Collection(ApiCollection.Name)]
+public sealed class CorsTests(ClusterApi cluster)
 {
     [Theory]
     [InlineData("http://localhost:5173", true)]
     [InlineData("https://evil.example", false)]
     public async Task Only_the_local_web_origin_is_allowed(string origin, bool allowed)
     {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddLocalCors();
-        var app = new ApplicationBuilder(services.BuildServiceProvider());
-        app.UseCors(LocalCors.PolicyName);
-        app.Run(context =>
-        {
-            context.Response.StatusCode = StatusCodes.Status204NoContent;
-            return Task.CompletedTask;
-        });
+        using var request = new HttpRequestMessage(HttpMethod.Options, "api/v1/tasks");
+        request.Headers.TryAddWithoutValidation("Origin", origin);
+        request.Headers.TryAddWithoutValidation("Access-Control-Request-Method", "GET");
 
-        var context = new DefaultHttpContext();
-        context.Request.Method = HttpMethods.Options;
-        context.Request.Headers["Origin"] = origin;
-        context.Request.Headers["Access-Control-Request-Method"] = "GET";
-        await app.Build()(context);
+        var response = await cluster.Anonymous.SendAsync(request);
 
-        var header = context.Response.Headers.AccessControlAllowOrigin.ToString();
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var header = response.Headers.TryGetValues("Access-Control-Allow-Origin", out var values)
+            ? string.Concat(values)
+            : string.Empty;
         if (allowed)
         {
             Assert.Equal(origin, header);

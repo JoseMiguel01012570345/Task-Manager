@@ -39,6 +39,6 @@ Ese script crea el clúster y aplica los manifiestos. `./infrastructure/local/sc
 ./infrastructure/local/scripts/Invoke-Tests.ps1
 ```
 
-Las pruebas de integración levantan PostgreSQL con Testcontainers. Carga, caos y ZAP se lanzan a mano: están descritos en `docs/performance`, `docs/chaos` y `docs/security`.
+Las pruebas de integración llaman a la API del clúster k3d en `http://localhost:8090`. El clúster tiene que estar desplegado. Carga, caos y ZAP se lanzan a mano: están descritos en `docs/performance`, `docs/chaos` y `docs/security`.
 
 Más detalle en `docs/setup.md`.

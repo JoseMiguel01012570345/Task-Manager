@@ -16,8 +16,8 @@ jobs:
         run: dotnet test tests/Unit/TaskManagement.UnitTests.csproj
       - name: Architecture tests
         run: dotnet test tests/Architecture/TaskManagement.ArchitectureTests.csproj
-      - name: Integration tests
-        run: dotnet test tests/Integration/TaskManagement.IntegrationTests.csproj
+      - name: Build integration tests
+        run: dotnet build tests/Integration/TaskManagement.IntegrationTests.csproj
 
   images:
     runs-on: ubuntu-latest

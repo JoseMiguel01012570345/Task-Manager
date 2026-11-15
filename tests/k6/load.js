@@ -1,7 +1,7 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-const base = __ENV.BASE_URL || "http://localhost:8088";
+const base = __ENV.BASE_URL || "http://localhost:8090";
 
 export const options = {
   vus: 10,

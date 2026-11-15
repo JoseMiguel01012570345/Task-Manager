@@ -1,21 +1,24 @@
-using System.Security.Claims;
-using TaskManagement.API.Auth;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace TaskManagement.IntegrationTests;
 
-public class KeycloakRoleTests
+[Collection(ApiCollection.Name)]
+public sealed class KeycloakRoleTests(ClusterApi cluster)
 {
     [Fact]
-    public async Task Realm_roles_become_role_claims()
+    public async Task Realm_roles_decide_who_can_assign_a_task()
     {
-        var identity = new ClaimsIdentity(
-            [new Claim("realm_access", """{"roles":["Administrator","User"]}""")],
-            authenticationType: "test");
-        var principal = new ClaimsPrincipal(identity);
+        var created = await cluster.CreateTaskAsync(cluster.Admin, "Asignada por admin", "dev-user");
 
-        var transformed = await new KeycloakRoles().TransformAsync(principal);
+        var forbidden = await cluster.User.PostAsJsonAsync("api/v1/tasks", new
+        {
+            title = "No permitida",
+            description = "k3d",
+            assigneeId = "admin-user"
+        });
 
-        Assert.True(transformed.IsInRole("Administrator"));
-        Assert.True(transformed.IsInRole("User"));
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+        await cluster.DeleteTaskAsync(cluster.Admin, created.Id, created.Version);
     }
 }

@@ -1,45 +1,37 @@
+using System.Diagnostics;
 using System.Net;
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.TestHost;
-using TaskManagement.API.Security;
 
 namespace TaskManagement.IntegrationTests;
 
-public class RateLimitTests
+[Collection(ApiCollection.Name)]
+public sealed class RateLimitTests(ClusterApi cluster)
 {
     [Fact]
     public async Task Excess_requests_return_429_and_retry_after()
     {
-        var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseTestServer();
-        builder.Services.AddRateLimiter(options =>
+        var started = Stopwatch.StartNew();
+        HttpResponseMessage? limited = null;
+        var sent = 0;
+        while (sent < 600 && started.Elapsed < TimeSpan.FromSeconds(9))
         {
-            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.OnRejected = async (context, _) =>
+            var response = await cluster.Admin.GetAsync("api/v1/tasks");
+            sent++;
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                context.HttpContext.Response.Headers.RetryAfter = "10";
-                await Results.Problem(statusCode: StatusCodes.Status429TooManyRequests).ExecuteAsync(context.HttpContext);
-            };
-            options.AddPolicy("tiny", httpContext => TaskRateLimiting.Window(httpContext, "tiny", permitLimit: 1, windowSeconds: 60));
-        });
+                limited = response;
+                break;
+            }
 
-        var app = builder.Build();
-        app.UseRateLimiter();
-        app.MapGet("/tiny", () => Results.Ok()).RequireRateLimiting("tiny");
-        await app.StartAsync();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
 
-        var client = app.GetTestClient();
-        var first = await client.GetAsync("/tiny");
-        var second = await client.GetAsync("/tiny");
+        Assert.True(limited is not null, $"Ninguna de las {sent} lecturas recibió 429. Cada réplica cuenta su propio cupo.");
+        var retryAfter = limited.Headers.RetryAfter?.Delta?.Seconds.ToString()
+            ?? limited.Headers.GetValues("Retry-After").Single();
+        Assert.Equal("10", retryAfter);
 
-        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
-        Assert.Equal(HttpStatusCode.TooManyRequests, second.StatusCode);
-        Assert.Equal("10", second.Headers.RetryAfter?.Delta?.Seconds.ToString() ?? second.Headers.GetValues("Retry-After").Single());
-
-        await app.StopAsync();
-        await app.DisposeAsync();
+        await Task.Delay(TimeSpan.FromSeconds(11));
+        var again = await cluster.Admin.GetAsync("api/v1/tasks");
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
     }
 }
