@@ -12,17 +12,23 @@ public sealed class RateLimitTests(ClusterApi cluster)
         var started = Stopwatch.StartNew();
         HttpResponseMessage? limited = null;
         var sent = 0;
-        while (sent < 600 && started.Elapsed < TimeSpan.FromSeconds(9))
+        while (limited is null && sent < 900 && started.Elapsed < TimeSpan.FromSeconds(9))
         {
-            var response = await cluster.Admin.GetAsync("api/v1/tasks");
-            sent++;
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            var batch = Math.Min(8, 900 - sent);
+            var responses = await Task.WhenAll(
+                Enumerable.Range(0, batch).Select(_ => cluster.Admin.GetAsync("api/v1/tasks")));
+            sent += responses.Length;
+            foreach (var response in responses)
             {
-                limited = response;
-                break;
-            }
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
+                    limited = response;
+                    continue;
+                }
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                response.Dispose();
+            }
         }
 
         Assert.True(limited is not null, $"Ninguna de las {sent} lecturas recibió 429. Cada réplica cuenta su propio cupo.");

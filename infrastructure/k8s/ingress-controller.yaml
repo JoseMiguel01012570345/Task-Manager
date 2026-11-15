@@ -54,6 +54,13 @@ spec:
         app: traefik-ingress
     spec:
       serviceAccountName: traefik-ingress
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: traefik
           image: traefik:v3.2.0

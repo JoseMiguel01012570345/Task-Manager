@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { describeHttpError } from "../api/errors";
 import { changeTaskStatus, deleteTask, getTask } from "../api/tasks";
 import type { TaskItem, TaskStatus } from "../api/types";
-
-const statuses: TaskStatus[] = ["Pending", "InProgress", "Done"];
+import { StatusBadge } from "../components/StatusBadge";
+import { formatDue, statusLabel, taskStatuses } from "../format";
 
 export function TaskDetailPage() {
   const { id } = useParams();
@@ -73,45 +73,71 @@ export function TaskDetailPage() {
   }
 
   if (loading) {
-    return <p>Cargando...</p>;
+    return <p className="notice panel">Cargando…</p>;
   }
   if (!task) {
-    return <p className="error">{error ?? "Tarea no encontrada."}</p>;
+    return (
+      <p className="error" role="alert">
+        {error ?? "Tarea no encontrada."}
+      </p>
+    );
   }
 
   return (
-    <section>
-      <p>
-        <Link to="/">Volver al listado</Link>
-      </p>
-      <h1>{task.title}</h1>
-      {error && <p className="error">{error}</p>}
-      <p>{task.description || "Sin descripción."}</p>
-      <dl>
-        <dt>Estado</dt>
-        <dd>{task.status}</dd>
-        <dt>Responsable</dt>
-        <dd>{task.assigneeId}</dd>
-        <dt>Creada por</dt>
-        <dd>{task.createdById}</dd>
-        <dt>Fecha límite</dt>
-        <dd>{task.dueDate ? new Date(task.dueDate).toLocaleString() : "—"}</dd>
-        <dt>Versión</dt>
-        <dd>{task.version}</dd>
-      </dl>
-      <div className="row">
-        <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as TaskStatus)}>
-          {statuses.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
+    <section className="page">
+      <Link className="back-link" to="/">
+        Volver al listado
+      </Link>
+      <header className="page-head">
+        <div>
+          <StatusBadge status={task.status} />
+          <h1>{task.title}</h1>
+        </div>
+      </header>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <article className="panel detail-body">
+        <p className="description">{task.description || "Sin descripción."}</p>
+        <dl className="meta">
+          <div>
+            <dt>Responsable</dt>
+            <dd>{task.assigneeId}</dd>
+          </div>
+          <div>
+            <dt>Creada por</dt>
+            <dd>{task.createdById}</dd>
+          </div>
+          <div>
+            <dt>Fecha límite</dt>
+            <dd>{formatDue(task.dueDate)}</dd>
+          </div>
+          <div>
+            <dt>Versión</dt>
+            <dd>{task.version}</dd>
+          </div>
+        </dl>
+      </article>
+      <div className="panel toolbar">
+        <label>
+          <span>Nuevo estado</span>
+          <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as TaskStatus)}>
+            {taskStatuses.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="button" onClick={() => void onStatus()}>
-          Cambiar estado
+          Cambiar a {statusLabel(nextStatus)}
         </button>
-        <Link to={`/tasks/${task.id}/edit`}>Editar</Link>
-        <button type="button" onClick={() => void onDelete()}>
+        <Link className="button ghost" to={`/tasks/${task.id}/edit`}>
+          Editar
+        </Link>
+        <button type="button" className={confirmDelete ? "danger solid" : "danger"} onClick={() => void onDelete()}>
           {confirmDelete ? "Confirmar eliminación" : "Eliminar"}
         </button>
       </div>

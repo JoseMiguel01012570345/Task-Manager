@@ -27,12 +27,20 @@ http:
   services:
     api:
       loadBalancer:
+        healthCheck:
+          path: /health/live
+          interval: 2s
+          timeout: 1s
         servers:
           - url: http://k3d-taskmanagement-server-0:80
           - url: http://k3d-taskmanagement-agent-0:80
           - url: http://k3d-taskmanagement-agent-1:80
     web:
       loadBalancer:
+        healthCheck:
+          path: /
+          interval: 2s
+          timeout: 1s
         servers:
           - url: http://k3d-taskmanagement-server-0:80
           - url: http://k3d-taskmanagement-agent-0:80

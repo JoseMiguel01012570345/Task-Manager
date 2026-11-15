@@ -42,7 +42,7 @@ spec:
                   value: taskmanagement
               command: ["/bin/sh", "-c"]
               args:
-                - pg_dump -h postgres -U taskmanagement --no-owner taskmanagement > "/backups/taskmanagement-$(date +%Y%m%d-%H%M%S).sql"
+                - pg_dump -h postgres-0.postgres -U taskmanagement --no-owner taskmanagement > "/backups/taskmanagement-$(date +%Y%m%d-%H%M%S).sql"
               volumeMounts:
                 - name: backups
                   mountPath: /backups

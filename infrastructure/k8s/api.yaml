@@ -5,7 +5,7 @@ metadata:
   namespace: taskmanagement
 type: Opaque
 stringData:
-  connection: Host=postgres;Port=5432;Database=taskmanagement;Username=taskmanagement;Password=taskmanagement
+  connection: Host=postgres-0.postgres.taskmanagement.svc.cluster.local,postgres-1.postgres.taskmanagement.svc.cluster.local,postgres-2.postgres.taskmanagement.svc.cluster.local;Port=5432;Database=taskmanagement;Username=taskmanagement;Password=taskmanagement;Target Session Attributes=primary
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -13,7 +13,11 @@ metadata:
   name: api
   namespace: taskmanagement
 spec:
-  replicas: 2
+  replicas: 3
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app: api
@@ -23,19 +27,19 @@ spec:
         app: api
     spec:
       affinity:
-        nodeAffinity:
+        podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: DoesNotExist
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app: api
+            - labelSelector:
+                matchLabels:
+                  app: api
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: api
           image: taskmanagement-api:local

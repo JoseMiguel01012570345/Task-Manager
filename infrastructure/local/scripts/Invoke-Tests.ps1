@@ -31,3 +31,5 @@ dotnet test tests/Integration/TaskManagement.IntegrationTests.csproj --filter "F
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+
+& (Join-Path $PSScriptRoot "Invoke-Resilience.ps1")

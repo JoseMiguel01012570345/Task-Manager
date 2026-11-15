@@ -33,6 +33,20 @@ foreach ($image in $images) {
 }
 kubectl apply -f (Join-Path $root "infrastructure/k8s/ingress-controller.yaml")
 kubectl wait --for=condition=ready pod -l app=traefik-ingress -n kube-system --timeout=180s
+kubectl -n kube-system patch deployment coredns --type strategic -p @"
+spec:
+  template:
+    spec:
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+"@
 
 $beforeMigrate = @(
     "namespace.yaml",

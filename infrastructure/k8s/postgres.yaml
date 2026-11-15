@@ -1,10 +1,145 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-ha
+  namespace: taskmanagement
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    set -eu
+    PGDATA=/var/lib/postgresql/data/pgdata
+    PRIMARY=postgres-0.postgres.taskmanagement.svc.cluster.local
+    ORDINAL=${HOSTNAME##*-}
+    mkdir -p /var/lib/postgresql/data
+    chown postgres:postgres /var/lib/postgresql/data
+    echo "*:*:*:replicator:replicator" > /var/lib/postgresql/.pgpass
+    chown postgres:postgres /var/lib/postgresql/.pgpass
+    chmod 600 /var/lib/postgresql/.pgpass
+
+    local_tl=0
+    local_state=""
+    if [ -s "$PGDATA/PG_VERSION" ]; then
+      local_tl=$(gosu postgres pg_controldata "$PGDATA" | awk '/TimeLineID:/ && !/Prev/ { print $NF }')
+      local_state=$(gosu postgres pg_controldata "$PGDATA" | awk -F': *' '/Database cluster state/ { print $2 }')
+    fi
+    winner=""
+    winner_tl=$local_tl
+    for n in 0 1 2; do
+      [ "$n" = "$ORDINAL" ] && continue
+      host="postgres-$n.postgres.taskmanagement.svc.cluster.local"
+      if ! gosu postgres pg_isready -h "$host" -p 5432 -U replicator -t 2; then
+        continue
+      fi
+      remote=$(PGPASSWORD=taskmanagement gosu postgres psql -h "$host" -U taskmanagement -d taskmanagement -tAc "SELECT CASE WHEN pg_is_in_recovery() THEN 't' ELSE 'f' END || '|' || timeline_id::text FROM pg_control_checkpoint()" | tr -d '[:space:]' || true)
+      remote_recovery=${remote%%|*}
+      remote_tl=${remote##*|}
+      case "$remote_tl" in
+        ''|*[!0-9]*) continue ;;
+      esac
+      if [ "$remote_recovery" = "f" ] && [ "$remote_tl" -gt "$winner_tl" ]; then
+        winner=$host
+        winner_tl=$remote_tl
+      elif [ "$remote_recovery" = "f" ] && [ "$remote_tl" = "$local_tl" ] && [ "$n" -lt "$ORDINAL" ] && ! printf '%s' "$local_state" | grep -q recovery; then
+        winner=$host
+        winner_tl=$remote_tl
+      fi
+    done
+
+    if [ -n "$winner" ]; then
+      echo "Se copia la base desde $winner"
+      rm -rf "$PGDATA"
+      mkdir -p "$PGDATA"
+      chown postgres:postgres "$PGDATA"
+      until gosu postgres pg_basebackup -h "$winner" -U replicator -D "$PGDATA" -Fp -Xs -P -R; do
+        echo "La copia base fallo; se reintenta"
+        rm -rf "$PGDATA"
+        mkdir -p "$PGDATA"
+        chown postgres:postgres "$PGDATA"
+        sleep 3
+      done
+      chown -R postgres:postgres "$PGDATA"
+    elif [ ! -s "$PGDATA/PG_VERSION" ] && [ "$ORDINAL" != "0" ]; then
+      echo "Esperando una base primaria para copiar"
+      until gosu postgres pg_isready -h "$PRIMARY" -p 5432 -U replicator -t 2; do
+        sleep 2
+      done
+      until gosu postgres pg_basebackup -h "$PRIMARY" -U replicator -D "$PGDATA" -Fp -Xs -P -R; do
+        echo "La copia base fallo; se reintenta"
+        rm -rf "$PGDATA"
+        mkdir -p "$PGDATA"
+        chown postgres:postgres "$PGDATA"
+        sleep 3
+      done
+      chown -R postgres:postgres "$PGDATA"
+    fi
+
+    exec docker-entrypoint.sh postgres \
+      -c wal_level=replica \
+      -c hot_standby=on \
+      -c max_wal_senders=10 \
+      -c max_replication_slots=10 \
+      -c wal_keep_size=64 \
+      -c listen_addresses=*
+  failover.sh: |
+    #!/bin/sh
+    set -eu
+    PGDATA=/var/lib/postgresql/data/pgdata
+    export PGPASSWORD=taskmanagement
+    until gosu postgres pg_isready -h 127.0.0.1 -p 5432 -U taskmanagement -t 2; do
+      sleep 2
+    done
+    role=$(gosu postgres psql -h 127.0.0.1 -U taskmanagement -d taskmanagement -tAc "SELECT 1 FROM pg_roles WHERE rolname = 'replicator'" | tr -d '[:space:]')
+    if [ "$role" != "1" ]; then
+      gosu postgres psql -h 127.0.0.1 -U taskmanagement -d taskmanagement -v ON_ERROR_STOP=1 -c "CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD 'replicator'"
+    fi
+    if ! grep -q "replicator" "$PGDATA/pg_hba.conf"; then
+      echo "host replication replicator 0.0.0.0/0 scram-sha-256" >> "$PGDATA/pg_hba.conf"
+      gosu postgres psql -h 127.0.0.1 -U taskmanagement -d taskmanagement -c "SELECT pg_reload_conf();"
+    fi
+    failures=0
+    while true; do
+      sleep 2
+      recovery=$(gosu postgres psql -h 127.0.0.1 -U taskmanagement -d taskmanagement -tAc "SELECT pg_is_in_recovery()" | tr -d '[:space:]' || echo "")
+      if [ "$recovery" != "t" ]; then
+        failures=0
+        continue
+      fi
+      other_primary=0
+      for n in 0 1 2; do
+        [ "$HOSTNAME" = "postgres-$n" ] && continue
+        other="postgres-$n.postgres.taskmanagement.svc.cluster.local"
+        if gosu postgres pg_isready -h "$other" -p 5432 -U replicator -t 2; then
+          other_recovery=$(gosu postgres psql -h "$other" -U taskmanagement -d taskmanagement -tAc "SELECT pg_is_in_recovery()" | tr -d '[:space:]' || true)
+          if [ "$other_recovery" = "f" ]; then
+            other_primary=1
+          fi
+        fi
+      done
+      if [ "$other_primary" = "1" ]; then
+        failures=0
+        continue
+      fi
+      host=$(grep primary_conninfo "$PGDATA/postgresql.auto.conf" | sed "s/.*host=''//;s/''.*//")
+      if [ -n "$host" ] && gosu postgres pg_isready -h "$host" -p 5432 -U replicator -t 2; then
+        failures=0
+      elif [ -n "$host" ]; then
+        failures=$((failures + 1))
+      fi
+      if [ "$failures" -ge 8 ]; then
+        echo "El primario no responde; esta copia se promueve"
+        gosu postgres psql -h 127.0.0.1 -U taskmanagement -d taskmanagement -c "SELECT pg_promote(false);" || true
+        failures=0
+      fi
+    done
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: postgres
   namespace: taskmanagement
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     app: postgres
   ports:
@@ -18,7 +153,7 @@ metadata:
   namespace: taskmanagement
 spec:
   serviceName: postgres
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: postgres
@@ -28,15 +163,23 @@ spec:
         app: postgres
     spec:
       affinity:
-        nodeAffinity:
+        podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: DoesNotExist
+            - labelSelector:
+                matchLabels:
+                  app: postgres
+              topologyKey: kubernetes.io/hostname
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
       containers:
         - name: postgres
           image: postgres:16-alpine
+          command: ["/bin/sh", "/scripts/entrypoint.sh"]
           ports:
             - containerPort: 5432
           env:
@@ -55,6 +198,21 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: scripts
+              mountPath: /scripts
+        - name: failover
+          image: postgres:16-alpine
+          command: ["/bin/sh", "/scripts/failover.sh"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: postgres-ha
+            defaultMode: 0555
   volumeClaimTemplates:
     - metadata:
         name: data

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { describeHttpError } from "../api/errors";
 import { createTask, getTask, updateTask } from "../api/tasks";
+import { DateTimePicker } from "../components/DateTimePicker";
 
 export function TaskFormPage() {
   const { id } = useParams();
@@ -65,33 +66,44 @@ export function TaskFormPage() {
   }
 
   if (loading) {
-    return <p>Cargando...</p>;
+    return <p className="notice panel">Cargando…</p>;
   }
 
   return (
-    <section>
-      <h1>{editing ? "Editar tarea" : "Nueva tarea"}</h1>
-      {error && <p className="error">{error}</p>}
-      <form className="stack" onSubmit={(event) => void onSubmit(event)}>
+    <section className="page narrow">
+      <header className="page-head">
+        <div>
+          <p className="eyebrow">{editing ? "Actualizar" : "Crear"}</p>
+          <h1>{editing ? "Editar tarea" : "Nueva tarea"}</h1>
+        </div>
+      </header>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <form className="panel stack" onSubmit={(event) => void onSubmit(event)}>
         <label>
-          Título
+          <span>Título</span>
           <input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={200} />
         </label>
         <label>
-          Descripción
+          <span>Descripción</span>
           <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={4000} />
         </label>
         <label>
-          Responsable
+          <span>Responsable</span>
           <input value={assigneeId} onChange={(event) => setAssigneeId(event.target.value)} required maxLength={128} />
         </label>
         <label>
-          Fecha límite
-          <input type="datetime-local" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+          <span>Fecha límite</span>
+          <DateTimePicker value={dueDate} onChange={setDueDate} />
         </label>
-        <div className="row">
+        <div className="toolbar">
           <button type="submit">Guardar</button>
-          <Link to={id ? `/tasks/${id}` : "/"}>Cancelar</Link>
+          <Link className="button ghost" to={id ? `/tasks/${id}` : "/"}>
+            Cancelar
+          </Link>
         </div>
       </form>
     </section>
