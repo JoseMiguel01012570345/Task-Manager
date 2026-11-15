@@ -11,3 +11,9 @@ providers:
 
 api:
   dashboard: false
+
+experimental:
+  plugins:
+    coraza:
+      moduleName: github.com/jcchavezs/coraza-http-wasm-traefik
+      version: v0.3.0

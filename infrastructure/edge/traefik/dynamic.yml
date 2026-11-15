@@ -1,9 +1,19 @@
 http:
   routers:
+    probe:
+      rule: PathPrefix(`/waf-probe`)
+      entryPoints:
+        - web
+      middlewares:
+        - waf-block
+      service: app
+      priority: 100
     app:
       rule: PathPrefix(`/`)
       entryPoints:
         - web
+      middlewares:
+        - waf-detect
       service: app
 
   services:
@@ -11,3 +21,19 @@ http:
       loadBalancer:
         servers:
           - url: http://whoami:80
+
+  middlewares:
+    waf-detect:
+      plugin:
+        coraza:
+          directives:
+            - SecRuleEngine DetectionOnly
+            - Include @crs-setup.conf.example
+            - Include @owasp_crs/*.conf
+    waf-block:
+      plugin:
+        coraza:
+          directives:
+            - SecRuleEngine On
+            - Include @crs-setup.conf.example
+            - Include @owasp_crs/*.conf
