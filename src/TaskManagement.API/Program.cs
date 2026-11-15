@@ -1,6 +1,7 @@
 using Serilog;
 using Serilog.Formatting.Compact;
 using TaskManagement.API.Auth;
+using TaskManagement.API.Observability;
 using TaskManagement.API.Endpoints;
 using TaskManagement.API.Errors;
 using TaskManagement.API.Security;
@@ -33,6 +34,7 @@ builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddTaskAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddLocalCors();
 builder.Services.AddTaskRateLimiting();
+builder.Services.AddTaskTelemetry(builder.Configuration);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
