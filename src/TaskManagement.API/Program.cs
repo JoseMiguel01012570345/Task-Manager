@@ -1,3 +1,4 @@
+using TaskManagement.API.Auth;
 using TaskManagement.API.Endpoints;
 using TaskManagement.API.Errors;
 using TaskManagement.Application;
@@ -17,15 +18,18 @@ builder.Services.AddProblemDetails(options =>
     };
 });
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddTaskAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.MapTaskEndpoints();

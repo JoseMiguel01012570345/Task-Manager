@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using TaskManagement.Application.Abstractions;
 using TaskManagement.Application.Tasks;
 using TaskManagement.Infrastructure.Auditing;
-using TaskManagement.Infrastructure.Identity;
 using TaskManagement.Infrastructure.Persistence;
 using TaskManagement.Infrastructure.Time;
 
@@ -30,7 +29,6 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddSingleton<IClock, SystemClock>();
-        services.AddScoped<ICurrentUser, DevCurrentUser>();
         services.AddScoped<IAuditLog, NoOpAuditLog>();
 
         if (seedDevelopmentData)
