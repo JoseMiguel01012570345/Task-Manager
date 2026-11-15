@@ -13,6 +13,7 @@ dist/
 
 .env
 .env.local
+infrastructure/local/docker/keycloak/generated/
 *.pfx
 secrets/
 

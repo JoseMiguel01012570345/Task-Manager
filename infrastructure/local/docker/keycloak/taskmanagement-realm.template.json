@@ -1,0 +1,67 @@
+{
+  "realm": "taskmanagement",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      { "name": "User" },
+      { "name": "Administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "taskmanagement-web",
+      "name": "Task Management Web",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "taskmanagement-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "taskmanagement-api",
+      "name": "Task Management API",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "__API_CLIENT_SECRET__",
+      "bearerOnly": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "dev-user",
+      "enabled": true,
+      "email": "dev-user@localhost",
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "__DEV_USER_PASSWORD__", "temporary": false }
+      ],
+      "realmRoles": ["User"]
+    },
+    {
+      "username": "admin-user",
+      "enabled": true,
+      "email": "admin-user@localhost",
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "__ADMIN_USER_PASSWORD__", "temporary": false }
+      ],
+      "realmRoles": ["Administrator"]
+    }
+  ]
+}
