@@ -26,6 +26,15 @@ public sealed class ApiExceptionHandler : IExceptionHandler
             return true;
         }
 
+        if (exception is DomainException domain && exception is not ConcurrencyException)
+        {
+            await Results.Problem(
+                title: "Unprocessable Entity",
+                detail: domain.Message,
+                statusCode: StatusCodes.Status422UnprocessableEntity).ExecuteAsync(httpContext).ConfigureAwait(false);
+            return true;
+        }
+
         if (exception is ConcurrencyException conflict)
         {
             await Results.Problem(

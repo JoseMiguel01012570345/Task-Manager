@@ -50,6 +50,18 @@ public static class TaskEndpoints
             return Results.Created($"/api/v1/tasks/{response.Id}", response);
         });
 
+        group.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            ChangeTaskStatusRequest request,
+            ChangeTaskStatus.Handler handler,
+            CancellationToken cancellationToken) =>
+        {
+            var task = await handler.Handle(
+                new ChangeTaskStatus.Command(id, request.Status, request.Version),
+                cancellationToken).ConfigureAwait(false);
+            return Results.Ok(TaskResponse.From(task));
+        });
+
         group.MapPut("/{id:guid}", async (
             Guid id,
             UpdateTaskRequest request,

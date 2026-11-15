@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<ListTasks.Handler>();
         services.AddScoped<GetTask.Handler>();
         services.AddScoped<UpdateTask.Handler>();
+        services.AddScoped<ChangeTaskStatus.Handler>();
         return services;
     }
 }

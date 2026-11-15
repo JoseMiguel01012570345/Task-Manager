@@ -4,6 +4,8 @@ namespace TaskManagement.API.Contracts;
 
 public sealed record CreateTaskRequest(string? Title, string? Description, string? AssigneeId, DateTimeOffset? DueDate);
 
+public sealed record ChangeTaskStatusRequest(string? Status, uint? Version);
+
 public sealed record UpdateTaskRequest(
     string? Title,
     string? Description,
