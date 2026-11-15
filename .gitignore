@@ -8,6 +8,8 @@ coverage/
 *.nupkg
 
 node_modules/
+test-results/
+playwright-report/
 dist/
 .vite/
 
