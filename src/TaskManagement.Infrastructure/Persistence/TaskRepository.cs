@@ -29,6 +29,12 @@ internal sealed class TaskRepository(AppDbContext db) : ITaskRepository
             query = query.Where(task => task.AssigneeId == filter.AssigneeId);
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.VisibleToUserId))
+        {
+            var userId = filter.VisibleToUserId;
+            query = query.Where(task => task.AssigneeId == userId || task.CreatedById == userId);
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var items = await query
             .OrderByDescending(task => task.CreatedAt)

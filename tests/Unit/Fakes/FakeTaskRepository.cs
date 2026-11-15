@@ -31,6 +31,12 @@ internal sealed class FakeTaskRepository : ITaskRepository
             query = query.Where(task => task.AssigneeId == filter.AssigneeId);
         }
 
+        if (!string.IsNullOrWhiteSpace(filter.VisibleToUserId))
+        {
+            query = query.Where(task =>
+                task.AssigneeId == filter.VisibleToUserId || task.CreatedById == filter.VisibleToUserId);
+        }
+
         var materialized = query
             .OrderByDescending(task => task.CreatedAt)
             .ThenByDescending(task => task.Id)

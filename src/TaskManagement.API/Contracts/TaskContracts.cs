@@ -4,6 +4,12 @@ namespace TaskManagement.API.Contracts;
 
 public sealed record CreateTaskRequest(string? Title, string? Description, string? AssigneeId, DateTimeOffset? DueDate);
 
+public sealed record TaskPageResponse(
+    IReadOnlyList<TaskResponse> Items,
+    int Page,
+    int PageSize,
+    int TotalCount);
+
 public sealed record TaskResponse(
     Guid Id,
     string Title,

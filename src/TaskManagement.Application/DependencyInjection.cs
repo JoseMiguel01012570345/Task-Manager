@@ -10,6 +10,7 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssemblyContaining<CreateTaskValidator>();
         services.AddScoped<CreateTask.Handler>();
+        services.AddScoped<ListTasks.Handler>();
         return services;
     }
 }

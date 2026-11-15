@@ -9,6 +9,25 @@ public static class TaskEndpoints
     {
         var group = app.MapGroup("/api/v1/tasks").WithTags("Tasks");
 
+        group.MapGet("/", async (
+            string? status,
+            string? assigneeId,
+            int? page,
+            int? pageSize,
+            ListTasks.Handler handler,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await handler.Handle(
+                new ListTasks.Query(status, assigneeId, page, pageSize),
+                cancellationToken).ConfigureAwait(false);
+
+            return Results.Ok(new TaskPageResponse(
+                result.Items.Select(TaskResponse.From).ToArray(),
+                result.Page,
+                result.PageSize,
+                result.TotalCount));
+        });
+
         group.MapPost("/", async (
             CreateTaskRequest request,
             CreateTask.Handler handler,
