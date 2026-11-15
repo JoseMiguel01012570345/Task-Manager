@@ -26,7 +26,7 @@ public static class TaskEndpoints
                 result.Page,
                 result.PageSize,
                 result.TotalCount));
-        });
+        }).RequireRateLimiting("reads");
 
         group.MapGet("/{id:guid}", async (
             Guid id,
@@ -35,7 +35,7 @@ public static class TaskEndpoints
         {
             var task = await handler.Handle(id, cancellationToken).ConfigureAwait(false);
             return Results.Ok(TaskResponse.From(task));
-        });
+        }).RequireRateLimiting("reads");
 
         group.MapPost("/", async (
             CreateTaskRequest request,
@@ -48,7 +48,7 @@ public static class TaskEndpoints
 
             var response = TaskResponse.From(result.Task);
             return Results.Created($"/api/v1/tasks/{response.Id}", response);
-        });
+        }).RequireRateLimiting("writes");
 
         group.MapPatch("/{id:guid}/status", async (
             Guid id,
@@ -60,7 +60,7 @@ public static class TaskEndpoints
                 new ChangeTaskStatus.Command(id, request.Status, request.Version),
                 cancellationToken).ConfigureAwait(false);
             return Results.Ok(TaskResponse.From(task));
-        });
+        }).RequireRateLimiting("writes");
 
         group.MapDelete("/{id:guid}", async (
             Guid id,
@@ -70,7 +70,7 @@ public static class TaskEndpoints
         {
             await handler.Handle(new DeleteTask.Command(id, version), cancellationToken).ConfigureAwait(false);
             return Results.NoContent();
-        });
+        }).RequireRateLimiting("writes");
 
         group.MapPut("/{id:guid}", async (
             Guid id,
@@ -83,7 +83,7 @@ public static class TaskEndpoints
                 cancellationToken).ConfigureAwait(false);
 
             return Results.Ok(TaskResponse.From(task));
-        });
+        }).RequireRateLimiting("writes");
 
         return app;
     }
