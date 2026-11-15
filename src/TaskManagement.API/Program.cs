@@ -24,12 +24,14 @@ builder.Services.AddProblemDetails(options =>
 });
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddTaskAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddLocalCors();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseSecurityHeaders();
+app.UseCors(LocalCors.PolicyName);
 app.UseJsonRequests();
 app.UseAuthentication();
 app.UseAuthorization();
