@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listTasks } from "../api/tasks";
 import type { TaskItem, TaskStatus } from "../api/types";
-import { ApiError } from "../api/client";
+import { describeHttpError } from "../api/errors";
 
 const pageSize = 10;
 
@@ -37,7 +37,7 @@ export function TaskListPage() {
         if (!active) {
           return;
         }
-        setError(caught instanceof ApiError ? `Error ${caught.status}` : "No se pudo cargar el listado.");
+        setError(describeHttpError(caught));
       })
       .finally(() => {
         if (active) {

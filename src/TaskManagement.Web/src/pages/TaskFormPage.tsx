@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ApiError } from "../api/client";
+import { describeHttpError } from "../api/errors";
 import { createTask, getTask, updateTask } from "../api/tasks";
 
 export function TaskFormPage() {
@@ -33,7 +33,7 @@ export function TaskFormPage() {
       })
       .catch((caught: unknown) => {
         if (active) {
-          setError(caught instanceof ApiError ? `Error ${caught.status}` : "No se pudo cargar la tarea.");
+          setError(describeHttpError(caught));
         }
       })
       .finally(() => {
@@ -60,7 +60,7 @@ export function TaskFormPage() {
       const saved = editing && id ? await updateTask(id, input) : await createTask(input);
       void navigate(`/tasks/${saved.id}`);
     } catch (caught) {
-      setError(caught instanceof ApiError ? `Error ${caught.status}` : "No se pudo guardar la tarea.");
+      setError(describeHttpError(caught));
     }
   }
 

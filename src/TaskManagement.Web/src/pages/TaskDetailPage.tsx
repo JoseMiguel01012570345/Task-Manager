@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ApiError } from "../api/client";
+import { describeHttpError } from "../api/errors";
 import { changeTaskStatus, deleteTask, getTask } from "../api/tasks";
 import type { TaskItem, TaskStatus } from "../api/types";
 
@@ -30,7 +30,7 @@ export function TaskDetailPage() {
       })
       .catch((caught: unknown) => {
         if (active) {
-          setError(caught instanceof ApiError ? `Error ${caught.status}` : "No se pudo cargar la tarea.");
+          setError(describeHttpError(caught));
         }
       })
       .finally(() => {
@@ -51,7 +51,7 @@ export function TaskDetailPage() {
     try {
       setTask(await changeTaskStatus(task.id, nextStatus, task.version));
     } catch (caught) {
-      setError(caught instanceof ApiError ? `Error ${caught.status}` : "No se pudo cambiar el estado.");
+      setError(describeHttpError(caught));
     }
   }
 
@@ -68,7 +68,7 @@ export function TaskDetailPage() {
       void navigate("/");
     } catch (caught) {
       setConfirmDelete(false);
-      setError(caught instanceof ApiError ? `Error ${caught.status}` : "No se pudo eliminar la tarea.");
+      setError(describeHttpError(caught));
     }
   }
 
