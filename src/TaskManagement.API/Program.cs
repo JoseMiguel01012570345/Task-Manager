@@ -1,3 +1,5 @@
+using Serilog;
+using Serilog.Formatting.Compact;
 using TaskManagement.API.Auth;
 using TaskManagement.API.Endpoints;
 using TaskManagement.API.Errors;
@@ -6,6 +8,11 @@ using TaskManagement.Application;
 using TaskManagement.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((context, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Application", "TaskManagement.API")
+    .WriteTo.Console(new CompactJsonFormatter()));
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = JsonRequestMiddleware.MaxBodyBytes;
@@ -30,6 +37,10 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+});
 app.UseExceptionHandler();
 app.UseSecurityHeaders();
 app.UseCors(LocalCors.PolicyName);
