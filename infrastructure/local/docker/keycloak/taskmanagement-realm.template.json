@@ -48,6 +48,9 @@
       "enabled": true,
       "email": "dev-user@localhost",
       "emailVerified": true,
+      "firstName": "Dev",
+      "lastName": "User",
+      "requiredActions": [],
       "credentials": [
         { "type": "password", "value": "__DEV_USER_PASSWORD__", "temporary": false }
       ],
@@ -58,6 +61,9 @@
       "enabled": true,
       "email": "admin-user@localhost",
       "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "User",
+      "requiredActions": [],
       "credentials": [
         { "type": "password", "value": "__ADMIN_USER_PASSWORD__", "temporary": false }
       ],
