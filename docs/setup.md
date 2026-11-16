@@ -34,7 +34,9 @@ git --version
 3. [Docker Desktop](https://www.docker.com/products/docker-desktop/) en ejecución. PostgreSQL, Keycloak, Redis y el clúster local corren en contenedores; no hace falta instalar PostgreSQL en el host.
 4. Git.
 
-Herramientas que entran más adelante, con los scripts del repositorio: k3d, kubectl, k6, Trivy, Playwright y OWASP ZAP. No son necesarias para compilar la API.
+Para compilar la API bastan el SDK, Node y Docker. `Invoke-Tests.ps1` además necesita k3d, kubectl, k6, Trivy, Playwright y la imagen de OWASP ZAP. Chaos Mesh 2.7.2 lo instala `Deploy-Cluster.ps1` dentro del clúster. El motor de Docker del laboratorio quedó en 8 GB: con 2 GB el clúster, Keycloak y Chaos Mesh no llegan a responder.
+
+El workflow `.github/workflows/ci.yml` no despliega k3d. En cada push y pull request corre las pruebas unitarias y de arquitectura, compila las de integración sin ejecutarlas, construye las imágenes y pasa Trivy por el repositorio.
 
 ## Editor
 

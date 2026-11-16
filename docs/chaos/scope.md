@@ -1,5 +1,9 @@
 # Chaos Mesh
 
-Los experimentos viven en `infrastructure/k8s/chaos` y solo seleccionan pods del namespace `taskmanagement`. No hay un experimento que abarque el clúster entero.
+Los experimentos viven en `infrastructure/k8s/chaos` y solo seleccionan pods del namespace `taskmanagement`.
 
-La instalación prevista, cuando exista el clúster k3d, es el chart de Chaos Mesh en ese mismo namespace. En esta máquina k3d no está instalado, así que el controlador no se desplegó y ningún experimento llegó a ejecutarse. Los informes quedan inconclusos a propósito: no se inventan tiempos de recuperación.
+`Deploy-Cluster.ps1` llama a `Install-ChaosMesh.ps1`. Si falta el CRD `podchaos.chaos-mesh.org`, el script descarga el instalador 2.7.2 del espejo, lo renderiza con `--template --k3s` y lo aplica. El controlador queda en el namespace `chaos-mesh`. La prueba espera a que al menos un pod del controlador esté listo. Los CRD de Schedule y Workflow pueden fallar al aplicarlos por el tamaño de la anotación; el `PodChaos` de la prueba no los usa.
+
+`Invoke-Resilience.ps1` aplica `pod-kill.yaml`: mata dos pods de la API (`mode: fixed`, `value: "2"`) y espera a que el Deployment recupere las réplicas. La parada de los nodos no pasa por Chaos Mesh: un nodo k3d es un contenedor Docker, y el script los detiene con `docker stop`.
+
+`postgres-kill.yaml` y `network-delay.yaml` están versionados y la suite no los aplica. Esos dos informes siguen inconclusos. No se publican tiempos de recuperación que no se midieron.

@@ -1,53 +1,36 @@
-## Test: TASK-061 caída de un pod de la API
+## Test: caída de dos pods de la API
 
-- Fecha: 2026-11-15
-- Commit / versión: ver `git log` de TASK-061
-- Entorno: laboratorio local, sin clúster k3d
-- Nodos K3d: 0
-- CPU y memoria del host: no medidas para este experimento
-- Réplicas de API: 2 en el manifiesto, 0 en ejecución
-- Réplicas de frontend: 2 en el manifiesto, 0 en ejecución
-- Duración: no aplica
-- Perfil de carga: ninguno
+- Fecha: 2026-11-16
+- Entorno: clúster k3d `taskmanagement`, contexto `k3d-taskmanagement`
+- Nodos K3d: 1 servidor y 2 agentes
+- Réplicas de API: 3
+- Réplicas de frontend: 3
+- Perfil de carga: el frontend de `Invoke-Tests.ps1` crea tareas mientras corre la prueba. k6 ya terminó antes de este paso.
 
 ### Hipótesis
 
-Matar un pod de la API deja el otro sirviendo. El presupuesto de disrupción impide quedar en cero durante un desalojo voluntario.
+Matar dos pods de la API deja una réplica sirviendo. El Deployment vuelve a tres réplicas y `/health/live` responde 200 por Traefik.
 
 ### Procedimiento
 
-Aplicar `infrastructure/k8s/chaos/pod-kill.yaml` con Chaos Mesh instalado en `taskmanagement`.
+`Invoke-Resilience.ps1` instala Chaos Mesh si falta, borra un `PodChaos` anterior y aplica `infrastructure/k8s/chaos/pod-kill.yaml` (`action: pod-kill`, `mode: fixed`, `value: "2"`, etiqueta `app: api`). Espera la condición `AllInjected`, el `rollout` del Deployment `api` y retira el experimento. Después pide `http://localhost:8088/health/live`.
 
 ### Métricas
 
-- Requests/s: no medido
-- Usuarios virtuales: 0
-- P50: no medido
-- P95: no medido
-- P99: no medido
-- HTTP 2xx: no medido
-- HTTP 4xx: no medido
-- HTTP 429: no medido
-- HTTP 5xx: no medido
-- CPU: no medido
-- Memoria: no medido
-- Reinicios de pods: no medido
-- Tiempo de recuperación: no medido
+No se anotaron percentiles ni una tasa de peticiones. El criterio de la suite es la condición de Chaos Mesh, el rollout y el 200 de `/health/live`.
 
 ### Integridad
 
-No hubo escrituras durante el experimento.
+El frontend crea tareas por la API durante la ventana. La suite exige al menos un alta en esa ventana y otra cuando los nodos ya volvieron.
 
 ### Resultado
 
-- [ ] Aprobado
+- [x] Aprobado
 - [ ] Fallido
-- [x] Inconcluso
+- [ ] Inconcluso
 
-### Evidencias
-
-El manifiesto está en el repositorio. No hay logs del controlador.
+La corrida de `Invoke-Tests.ps1` del 2026-11-16 terminó con código 0 e imprimió `Resiliencia comprobada`.
 
 ### Observaciones y limitaciones
 
-k3d no está instalado en esta máquina. No se afirma recuperación.
+El experimento mata dos pods, no uno. No mide cuántas peticiones fallaron durante el reemplazo.

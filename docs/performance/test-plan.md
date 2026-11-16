@@ -10,8 +10,7 @@ Medir, con tráfico controlado, la tasa de respuestas, la latencia y el momento 
 
 - Un host de desarrollo, no un centro de datos.
 - k6 en la máquina o un Job dentro del namespace `taskmanagement`.
-- La API en las réplicas que tenga el manifiesto (mínimo 2 cuando el clúster existe).
-- PostgreSQL del laboratorio. Redis está en Compose, pero el límite de tasa todavía es por proceso.
+- La API en 3 réplicas. El límite de tasa es por proceso, así que el borde reparte el cupo entre ellas.
 
 ## Escenarios
 
@@ -25,4 +24,4 @@ Medir, con tráfico controlado, la tasa de respuestas, la latencia y el momento 
 | Mixto | `tests/k6/mixed.js` | Lecturas y escrituras |
 | Límite | `tests/k6/rate-limit.js` | Provocar 429 |
 
-Cada ejecución se anota con la plantilla de la sección 8 del plan. Si k6 no está instalado, el resultado es inconcluso: los escenarios quedan versionados y no se inventan cifras.
+`K6ScenarioTests` lanza los siete archivos con `SUITE=1`. Si k6 no está en PATH, esa prueba no arranca. No se inventan cifras: el informe guarda el código de salida, no los percentiles.

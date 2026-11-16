@@ -2,11 +2,11 @@
 
 - Fecha: 2026-11-15
 - Commit / versión: ver `git log` de TASK-063
-- Entorno: laboratorio local, sin clúster k3d
-- Nodos K3d: 0
+- Entorno: clúster k3d existente; este experimento no forma parte de `Invoke-Resilience.ps1`
+- Nodos K3d: 1 servidor y 2 agentes en el laboratorio, no usados por este informe
 - CPU y memoria del host: no medidas
-- Réplicas de API: 2 en el manifiesto
-- Réplicas de frontend: 2 en el manifiesto
+- Réplicas de API: 3 en el manifiesto
+- Réplicas de frontend: 3 en el manifiesto
 - Duración: 45s previstas en el manifiesto
 - Perfil de carga: ninguno
 
@@ -50,4 +50,4 @@ El manifiesto de NetworkChaos está en el repositorio.
 
 ### Observaciones y limitaciones
 
-Chaos Mesh no está instalado. No se afirma el efecto del retardo.
+Chaos Mesh está instalado, pero la suite no aplica `network-delay.yaml`. No se afirma el efecto del retardo.

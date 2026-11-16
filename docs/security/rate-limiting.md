@@ -1,6 +1,6 @@
 # Límites de solicitudes
 
-Los contadores de una sola réplica viven en memoria. Cuando Redis esté en el entorno, el mismo contrato se puede respaldar con un contador compartido. Las particiones son por operación y por usuario (`preferred_username`) o, si no hay usuario, por IP.
+Los contadores viven en la memoria de cada réplica. No hay un contador compartido: el borde reparte las peticiones y cada pod cuenta las suyas. La partición es la operación más el usuario (`preferred_username`) o, si no hay usuario, la IP. `RateLimitTests` abre un `kubectl port-forward` a un solo pod de la API para llenar ese cupo, y exige `429` con `Retry-After: 10`. Después de 11 segundos la misma lectura tiene que volver a 200.
 
 | Política | Límite | Ventana |
 |---|---|---|

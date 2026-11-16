@@ -2,11 +2,11 @@
 
 - Fecha: 2026-11-15
 - Commit / versión: ver `git log` de TASK-064
-- Entorno: laboratorio local, sin clúster k3d
-- Nodos K3d: 0
+- Entorno: clúster k3d existente; este experimento no forma parte de `Invoke-Resilience.ps1`
+- Nodos K3d: 1 servidor y 2 agentes en el laboratorio, no usados por este informe
 - CPU y memoria del host: no medidas
-- Réplicas de API: 2 en el manifiesto
-- Réplicas de frontend: 2 en el manifiesto
+- Réplicas de API: 3 en el manifiesto
+- Réplicas de frontend: 3 en el manifiesto
 - Duración: 20s previstas en el manifiesto
 - Perfil de carga: ninguno
 
@@ -50,4 +50,4 @@ El manifiesto está en el repositorio. El volumen se define en `infrastructure/k
 
 ### Observaciones y limitaciones
 
-Sin clúster no se mató el pod de la base. La base de Compose siguió en marcha para el resto del laboratorio.
+Chaos Mesh está instalado, pero la suite no aplica `postgres-kill.yaml`. No se afirma el efecto de matar un pod de PostgreSQL. El StatefulSet del laboratorio tiene 3 réplicas y una sola acepta escrituras.

@@ -7,4 +7,4 @@ kubectl create configmap k6-scripts --from-file=tests/k6 -n taskmanagement
 kubectl apply -f infrastructure/k8s/k6-job.yaml
 ```
 
-En esta máquina `k6` no formaba parte del PATH y el clúster k3d no estaba creado, así que los escenarios no se ejecutaron. No hay cifras de rendimiento que reportar.
+`Invoke-Tests.ps1` los ejecuta en el host, con `SUITE=1` y `BASE_URL=http://localhost:8088`. `mixed.js` lleva un token de `dev-user`. Si un escenario sale distinto de 0, se reintenta una vez. No se copian percentiles a este documento: el criterio de la suite es el código de salida.

@@ -1,53 +1,36 @@
-## Test: TASK-062 parada de un nodo
+## Test: parada de los dos agentes
 
-- Fecha: 2026-11-15
-- Commit / versión: ver `git log` de TASK-062
-- Entorno: laboratorio local, sin clúster k3d
-- Nodos K3d: 0
-- CPU y memoria del host: no medidas
-- Réplicas de API: 2 en el manifiesto
-- Réplicas de frontend: 2 en el manifiesto
-- Duración: no aplica
-- Perfil de carga: ninguno
+- Fecha: 2026-11-16
+- Entorno: clúster k3d `taskmanagement`
+- Nodos K3d: 1 servidor y 2 agentes
+- Réplicas de API: 3
+- Réplicas de frontend: 3
+- Perfil de carga: el frontend sigue creando tareas. k6 no corre durante esta parada.
 
 ### Hipótesis
 
-Al parar un agente, las réplicas del otro nodo siguen respondiendo y el pod desplazado vuelve a programarse.
+Con los dos agentes detenidos, el servidor sigue respondiendo en `http://localhost:8088/health/ready`. Al arrancarlos, los nodos vuelven a Ready y la API queda lista.
 
 ### Procedimiento
 
-Seguir `docs/chaos/node.md`: `docker stop` de un agente y después `docker start`.
+Después del `PodChaos`, `Invoke-Resilience.ps1` ejecuta `docker stop` de `k3d-taskmanagement-agent-0` y `k3d-taskmanagement-agent-1`. Comprueba `/health/ready` hasta 20 veces. En el `finally` hace `docker start` de los agentes que llegó a parar, espera cada nodo Ready (180 s), el rollout de la API, otra vez `/health/ready` y un token de Keycloak.
 
 ### Métricas
 
-- Requests/s: no medido
-- Usuarios virtuales: 0
-- P50: no medido
-- P95: no medido
-- P99: no medido
-- HTTP 2xx: no medido
-- HTTP 4xx: no medido
-- HTTP 429: no medido
-- HTTP 5xx: no medido
-- CPU: no medido
-- Memoria: no medido
-- Reinicios de pods: no medido
-- Tiempo de recuperación: no medido
+No se anotaron percentiles. El criterio es el 200 de `/health/ready` con los agentes parados y, al volver, nodos Ready, rollout y token.
 
 ### Integridad
 
-No hubo escrituras durante el experimento.
+La suite pide otra alta del frontend cuando la bandera de la ventana ya no existe, con hasta tres minutos de reintento.
 
 ### Resultado
 
-- [ ] Aprobado
+- [x] Aprobado
 - [ ] Fallido
-- [x] Inconcluso
+- [ ] Inconcluso
 
-### Evidencias
-
-El procedimiento está escrito. No existe el contenedor `k3d-taskmanagement-agent-0`.
+La misma corrida del 2026-11-16 terminó con código 0.
 
 ### Observaciones y limitaciones
 
-Sin clúster no hay nodo que parar. No se afirma tolerancia a la pérdida de un nodo.
+No se apaga el servidor. Keycloak no está en ese nodo: al perder los dos agentes hay que esperar a que vuelva a importar el realm. Si `kubectl` pierde el enlace con el balanceador de k3d, el script reintenta y, en el segundo intento, reinicia `k3d-taskmanagement-serverlb`.

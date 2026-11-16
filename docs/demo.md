@@ -55,4 +55,4 @@ Grafana queda dentro del clúster, en `http://localhost:8088/grafana/`, con el u
 
 ## 6. Lo que esta guía no ejecuta
 
-k6, ZAP, k3d y Chaos Mesh quedan descritos en `docs/performance`, `docs/security/zap-baseline.md` y `docs/chaos`. El resumen de lo medido y lo pendiente está en `docs/reports/summary.md`.
+Esta guía no lanza k6, ZAP ni Chaos Mesh. Eso lo hace `infrastructure/local/scripts/Invoke-Tests.ps1` con el clúster ya desplegado. El detalle está en `docs/performance`, `docs/security/zap-baseline.md`, `docs/chaos` y `docs/reports/summary.md`.

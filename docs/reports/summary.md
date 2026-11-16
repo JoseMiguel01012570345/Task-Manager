@@ -12,17 +12,22 @@ Lo que se ejecutó en esta máquina y lo que quedó pendiente. No se rellenan m�
 - El collector recibió trazas y logs.
 - `pg_dump` de la base de Compose incluye `tasks`, `audit_records` y el historial de migraciones.
 - Las imágenes `taskmanagement-api:local` y `taskmanagement-web:local` se construyeron. La API corre como `app` y el frontend como `nginx`.
+- El clúster k3d `taskmanagement` está en uso: 1 servidor y 2 agentes, API y frontend a 3 réplicas, PostgreSQL a 3 con una sola primaria. El ingreso es `http://localhost:8088`.
+- Chaos Mesh 2.7.2 está en el namespace `chaos-mesh`. La resiliencia mata dos pods de la API con un `PodChaos` y para los dos agentes con `docker stop`. El servidor sigue respondiendo `/health/ready`.
+- `Invoke-Tests.ps1` del 2026-11-16 terminó con código 0: los siete escenarios k6 con `SUITE=1`, el frontend durante y después de esa ventana, la resiliencia, Trivy, las pruebas de seguridad y el baseline de ZAP (0 fallos, 2 avisos).
+- El límite de tasa se comprobó contra un solo pod, con `429` y `Retry-After: 10`.
 
 ## Inconcluso
 
-- k3d no está instalado. No hay clúster, así que no se aplicaron los manifiestos ni Chaos Mesh. Los informes de `docs/chaos` lo dicen.
-- k6 no está en PATH. Los escenarios están versionados y no tienen cifras.
-- La imagen de ZAP no estaba en Docker. El script queda en `infrastructure/local/scripts/Invoke-ZapBaseline.ps1`.
-- Trivy está en el workflow y no se lanzó el escaneo en esta sesión.
-- El límite de tasa sigue en memoria por réplica. Redis está en Compose y todavía no es el almacén del contador.
+- `postgres-kill.yaml` y `network-delay.yaml` no los aplica la suite. No hay resultado de esos dos experimentos.
+- No se guardaron percentiles de k6 ni un tiempo de recuperación en segundos.
+- El límite de tasa sigue en memoria por réplica. No hay un contador compartido.
+- El workflow de GitHub no ejecuta `Invoke-Tests.ps1`.
 
 ## Desviaciones
 
 - El plan habla de .NET 10. El SDK instalado es 9.0.301, así que la solución es `net9.0`. Está anotado en `docs/setup.md`.
 - OpenTelemetry se fijó en 1.20.1 porque 1.21 arrastra bibliotecas de .NET 10.
 - El frontend de la imagen se compiló con `node:22-alpine`, que es la imagen presente en Docker. El desarrollo local sigue en Node 20.
+- El experimento de nodo para los dos agentes, no uno. Chaos Mesh no puede apagar un nodo k3d.
+- El `PodChaos` mata dos pods de la API, no uno.

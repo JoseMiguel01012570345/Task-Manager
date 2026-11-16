@@ -9,4 +9,4 @@ Lo que sí se puede observar, cuando k6 está instalado y la API responde:
 - Si las peticiones de lectura siguieron respondiendo mientras las de escritura recibían 429.
 - La capa que respondió: la API (429 y `Retry-After`), Traefik o Coraza en `/waf-probe`.
 
-El escenario `tests/k6/rate-limit.js` está escrito para provocar 429. Sin una ejecución registrada, el resultado es inconcluso. No se publica un número de “tráfico soportado”.
+`tests/k6/rate-limit.js`, con `SUITE=1`, acepta 200, 401 o 429. No exige llegar al cupo. Quien exige el 429 es `RateLimitTests`, contra un solo pod. No se publica un número de tráfico soportado.
