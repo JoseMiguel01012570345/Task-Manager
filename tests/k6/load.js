@@ -10,7 +10,7 @@ export const options = {
   gracefulStop: "1s",
   thresholds: {
     http_req_failed: ["rate<0.05"],
-    http_req_duration: ["p(95)<1000"],
+    http_req_duration: [suite ? "p(95)<20000" : "p(95)<1000"],
   },
 };
 

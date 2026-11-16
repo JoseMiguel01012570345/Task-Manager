@@ -39,6 +39,10 @@ Ese script crea el clúster y aplica los manifiestos. `./infrastructure/local/sc
 ./infrastructure/local/scripts/Invoke-Tests.ps1
 ```
 
-Las pruebas de integración llaman a la API por Traefik, en `http://localhost:8088`. El clúster tiene que estar desplegado. Carga, caos y ZAP se lanzan a mano: están descritos en `docs/performance`, `docs/chaos` y `docs/security`.
+Ese comando corre tres bloques. El clúster tiene que estar desplegado; las llamadas salen por Traefik, en `http://localhost:8088`.
+
+- Arquitectura, junto con las pruebas unitarias, el contrato de la API y Trivy.
+- Infraestructura: k6 y después la resiliencia, mientras el frontend entra y crea tareas.
+- Seguridad: cabeceras, CORS, acceso, roles, límite de tasa, cuerpo JSON y la línea base de ZAP.
 
 Más detalle en `docs/setup.md`.

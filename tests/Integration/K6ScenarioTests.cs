@@ -31,7 +31,7 @@ public sealed class K6ScenarioTests(ClusterApi cluster)
         start.Environment["SUITE"] = "1";
         if (authenticated)
         {
-            start.Environment["TOKEN"] = await cluster.IssueUserAccessTokenAsync();
+            start.Environment["TOKEN"] = await AccessTokenAsync();
         }
 
         using var process = Process.Start(start);
@@ -45,6 +45,25 @@ public sealed class K6ScenarioTests(ClusterApi cluster)
         Assert.True(
             process.ExitCode == 0,
             $"k6 {script} terminó con {process.ExitCode}.{Environment.NewLine}{Tail(stdout)}{Environment.NewLine}{Tail(stderr)}");
+    }
+
+    private async Task<string> AccessTokenAsync()
+    {
+        Exception? last = null;
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                return await cluster.IssueUserAccessTokenAsync();
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+            {
+                last = exception;
+                await Task.Delay(TimeSpan.FromSeconds(3));
+            }
+        }
+
+        throw last ?? new InvalidOperationException("Keycloak no entregó el token de k6.");
     }
 
     private static string ResolveK6()
