@@ -7,19 +7,45 @@ function Write-Step([string]$title) {
     Write-Host "== $title =="
 }
 
+function Invoke-Kubectl([string[]]$arguments) {
+    Invoke-KubectlOutput $arguments | Out-Host
+}
+
+function Invoke-KubectlOutput([string[]]$arguments) {
+    for ($attempt = 0; $attempt -lt 5; $attempt++) {
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        $output = & kubectl @arguments 2>&1
+        $code = $LASTEXITCODE
+        $ErrorActionPreference = $previous
+        if ($code -eq 0) {
+            $text = $output | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }
+            return ($text | Out-String).Trim()
+        }
+        if ($attempt -eq 1) {
+            $ErrorActionPreference = "Continue"
+            docker restart k3d-taskmanagement-serverlb | Out-Null
+            $ErrorActionPreference = $previous
+        }
+        Start-Sleep -Seconds 5
+    }
+    throw "kubectl $($arguments -join ' ') fallo"
+}
+
 function Show-Workloads {
-    kubectl get nodes -o wide
-    if ($LASTEXITCODE -ne 0) { throw "kubectl get nodes fallo con $LASTEXITCODE" }
-    kubectl get pods -n $namespace -o wide
-    if ($LASTEXITCODE -ne 0) { throw "kubectl get pods fallo con $LASTEXITCODE" }
+    Invoke-Kubectl @("get", "nodes", "-o", "wide", "--request-timeout=20s")
+    Invoke-Kubectl @("get", "pods", "-n", $namespace, "-o", "wide", "--request-timeout=20s")
 }
 
 function Show-ApiLogs {
     Write-Host "-- logs app=api --"
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     kubectl logs -n $namespace -l app=api --tail=30 --prefix=true --all-containers=true
     if ($LASTEXITCODE -ne 0) {
         Write-Host "No se pudieron leer los logs de la API (codigo $LASTEXITCODE)."
     }
+    $ErrorActionPreference = $previous
 }
 
 function Test-Ingress([string]$path, [int]$attempts = 8) {
@@ -42,19 +68,24 @@ Write-Step "Estado antes de los fallos"
 Show-Workloads
 
 Write-Step "Caida de dos pods de la API"
-$listed = kubectl get pods -n $namespace -l app=api --field-selector=status.phase=Running -o jsonpath="{.items[*].metadata.name}"
-if ($LASTEXITCODE -ne 0) { throw "No se pudieron listar los pods de la API." }
-$apiPods = @($listed -split '\s+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-if ($apiPods.Count -lt 2) {
-    throw "Hacen falta dos pods de la API en ejecucion y hay $($apiPods.Count)."
+& (Join-Path $PSScriptRoot "Install-ChaosMesh.ps1")
+$podKill = Join-Path $PSScriptRoot "..\..\k8s\chaos\pod-kill.yaml"
+Invoke-Kubectl @("delete", "-f", $podKill, "--ignore-not-found")
+try {
+    Invoke-Kubectl @("apply", "-f", $podKill)
+    $injected = $false
+    for ($attempt = 0; $attempt -lt 30; $attempt++) {
+        $status = Invoke-KubectlOutput @("get", "podchaos", "api-pod-kill", "-n", $namespace, "--request-timeout=20s", "-o", "jsonpath={.status.conditions[?(@.type=='AllInjected')].status}")
+        if ($status -eq "True") { $injected = $true; break }
+        Start-Sleep -Seconds 2
+    }
+    if (-not $injected) { throw "Chaos Mesh no confirmo la caida de los dos pods." }
+    Show-Workloads
+    Invoke-Kubectl @("rollout", "status", "deployment/api", "-n", $namespace, "--timeout=180s")
 }
-$targets = @($apiPods | Select-Object -First 2)
-Write-Host "Eliminando $($targets -join ', ')"
-kubectl delete pod -n $namespace @targets --wait=false
-if ($LASTEXITCODE -ne 0) { throw "No se pudieron eliminar los pods de la API." }
-Show-Workloads
-kubectl rollout status deployment/api -n $namespace --timeout=180s
-if ($LASTEXITCODE -ne 0) { throw "La API no recupero sus dos replicas." }
+finally {
+    Invoke-Kubectl @("delete", "-f", $podKill, "--ignore-not-found")
+}
 if (-not (Test-Ingress "/health/live")) {
     throw "El ingreso no respondio despues de recrear los dos pods."
 }
@@ -86,14 +117,14 @@ finally {
 }
 
 foreach ($agent in $agents) {
-    kubectl wait --for=condition=Ready "node/$agent" --timeout=180s
-    if ($LASTEXITCODE -ne 0) { throw "El nodo $agent no volvio a Ready." }
+    Invoke-Kubectl @("wait", "--for=condition=Ready", "node/$agent", "--timeout=180s")
 }
-kubectl rollout status deployment/api -n $namespace --timeout=180s
-if ($LASTEXITCODE -ne 0) { throw "La API no quedo lista despues de recuperar los agentes." }
+Invoke-Kubectl @("rollout", "status", "deployment/api", "-n", $namespace, "--timeout=180s")
 if (-not (Test-Ingress "/health/ready" 20)) {
     throw "La API no quedo lista en $base/health/ready."
 }
+. (Join-Path $PSScriptRoot "Wait-Keycloak.ps1")
+Wait-KeycloakToken $base
 
 Write-Step "Estado despues de recuperar los nodos"
 Show-Workloads

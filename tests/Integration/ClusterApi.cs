@@ -29,22 +29,7 @@ public sealed class ClusterApi : IAsyncLifetime
     public async Task InitializeAsync()
     {
         Anonymous = CreateClient();
-        try
-        {
-            var ready = await Anonymous.GetAsync("health/ready");
-            if (!ready.IsSuccessStatusCode)
-            {
-                throw new InvalidOperationException(
-                    $"k3d respondió {(int)ready.StatusCode} en {BaseUri}health/ready. Ejecuta Deploy-Cluster.ps1.");
-            }
-        }
-        catch (HttpRequestException exception)
-        {
-            throw new InvalidOperationException(
-                $"No hay un clúster k3d en {BaseUri}. Ejecuta Deploy-Cluster.ps1.",
-                exception);
-        }
-
+        await WaitUntilReadyAsync();
         User = await AuthenticatedAsync("dev-user", Password("DEV_USER_PASSWORD", "lab-dev-user"));
         Admin = await AuthenticatedAsync("admin-user", Password("ADMIN_USER_PASSWORD", "lab-admin-user"));
     }
@@ -58,10 +43,40 @@ public sealed class ClusterApi : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        User.Dispose();
-        Admin.Dispose();
-        Anonymous.Dispose();
+        User?.Dispose();
+        Admin?.Dispose();
+        Anonymous?.Dispose();
         return Task.CompletedTask;
+    }
+
+    private async Task WaitUntilReadyAsync()
+    {
+        var deadline = DateTime.UtcNow.AddMinutes(2);
+        Exception? last = null;
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                var ready = await Anonymous.GetAsync("health/ready");
+                if (ready.IsSuccessStatusCode)
+                {
+                    return;
+                }
+
+                last = new InvalidOperationException(
+                    $"k3d respondió {(int)ready.StatusCode} en {BaseUri}health/ready.");
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+            {
+                last = exception;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(3));
+        }
+
+        throw new InvalidOperationException(
+            $"No hay un clúster k3d en {BaseUri}. Ejecuta Deploy-Cluster.ps1.",
+            last);
     }
 
     public async Task<TaskBody> CreateTaskAsync(HttpClient client, string title, string assigneeId)
@@ -86,26 +101,53 @@ public sealed class ClusterApi : IAsyncLifetime
 
     private async Task<HttpClient> AuthenticatedAsync(string username, string password)
     {
-        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        var deadline = DateTime.UtcNow.AddMinutes(2);
+        while (true)
         {
-            ["grant_type"] = "password",
-            ["client_id"] = "taskmanagement-web",
-            ["username"] = username,
-            ["password"] = password
-        });
-        var response = await Anonymous.PostAsync("realms/taskmanagement/protocol/openid-connect/token", content);
-        var payload = await response.Content.ReadAsStringAsync();
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException(
-                $"Keycloak rechazó a {username} en {BaseUri}: {(int)response.StatusCode} {payload}");
-        }
+            using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "password",
+                ["client_id"] = "taskmanagement-web",
+                ["username"] = username,
+                ["password"] = password
+            });
+            HttpResponseMessage response;
+            try
+            {
+                response = await Anonymous.PostAsync("realms/taskmanagement/protocol/openid-connect/token", content);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
+            {
+                if (DateTime.UtcNow >= deadline)
+                {
+                    throw new InvalidOperationException($"Keycloak no respondió para {username} en {BaseUri}.", exception);
+                }
 
-        using var document = JsonDocument.Parse(payload);
-        var accessToken = document.RootElement.GetProperty("access_token").GetString();
-        var client = CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        return client;
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                continue;
+            }
+
+            var payload = await response.Content.ReadAsStringAsync();
+            var retry = (int)response.StatusCode is 405 or 502 or 503 or 504;
+            response.Dispose();
+            if (retry && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                continue;
+            }
+
+            if (!payload.Contains("access_token", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Keycloak rechazó a {username} en {BaseUri}: {payload}");
+            }
+
+            using var document = JsonDocument.Parse(payload);
+            var accessToken = document.RootElement.GetProperty("access_token").GetString();
+            var client = CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            return client;
+        }
     }
 
     private HttpClient CreateClient()

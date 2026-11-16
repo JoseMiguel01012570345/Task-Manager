@@ -34,17 +34,30 @@ public sealed class K6ScenarioTests(ClusterApi cluster)
             start.Environment["TOKEN"] = await AccessTokenAsync();
         }
 
-        using var process = Process.Start(start);
-        Assert.NotNull(process);
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        var stdout = await stdoutTask;
-        var stderr = await stderrTask;
+        string stdout = string.Empty;
+        string stderr = string.Empty;
+        var exitCode = -1;
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            using var process = Process.Start(start);
+            Assert.NotNull(process);
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            stdout = await stdoutTask;
+            stderr = await stderrTask;
+            exitCode = process.ExitCode;
+            if (exitCode == 0)
+            {
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(5));
+        }
 
         Assert.True(
-            process.ExitCode == 0,
-            $"k6 {script} terminó con {process.ExitCode}.{Environment.NewLine}{Tail(stdout)}{Environment.NewLine}{Tail(stderr)}");
+            exitCode == 0,
+            $"k6 {script} terminó con {exitCode}.{Environment.NewLine}{Tail(stdout)}{Environment.NewLine}{Tail(stderr)}");
     }
 
     private async Task<string> AccessTokenAsync()

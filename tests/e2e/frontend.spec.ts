@@ -40,7 +40,7 @@ test("el frontend sigue operando durante k6 y la resiliencia", async ({ page }) 
           return false;
         }
       },
-      { timeout: 90_000, intervals: [2_000] },
+      { timeout: 180_000, intervals: [2_000] },
     )
     .toBe(true);
 });

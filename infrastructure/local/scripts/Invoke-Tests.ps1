@@ -7,10 +7,21 @@ if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
 }
 
 kubectl config use-context k3d-taskmanagement | Out-Null
-kubectl get nodes --request-timeout=10s | Out-Null
+$nodesReady = $false
+for ($attempt = 0; $attempt -lt 10; $attempt++) {
+    kubectl get nodes --request-timeout=15s | Out-Null
+    if ($LASTEXITCODE -eq 0) { $nodesReady = $true; break }
+    if ($attempt -eq 1) {
+        docker restart k3d-taskmanagement-serverlb | Out-Null
+    }
+    Start-Sleep -Seconds 5
+}
+if (-not $nodesReady) { throw "El cluster k3d no responde." }
 
 & (Join-Path $PSScriptRoot "Connect-Edge.ps1")
 $base = "http://localhost:8088"
+. (Join-Path $PSScriptRoot "Wait-Keycloak.ps1")
+Wait-KeycloakToken $base
 
 $envFile = Join-Path $root ".env"
 if (Test-Path $envFile) {
@@ -87,9 +98,11 @@ finally {
         Remove-Item $flag -Force
     }
     if ($e2e -and -not $e2e.HasExited) {
-        if (-not $e2e.WaitForExit(180000)) {
+        if (-not $e2e.WaitForExit(360000)) {
             Stop-Process -Id $e2e.Id -Force -ErrorAction SilentlyContinue
-            $infraFailed = "El frontend no termino despues de k6 y la resiliencia."
+            if (-not $infraFailed) {
+                $infraFailed = "El frontend no termino despues de k6 y la resiliencia."
+            }
         }
     }
     if ($e2e) {

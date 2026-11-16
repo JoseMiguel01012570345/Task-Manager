@@ -5,8 +5,8 @@ metadata:
   namespace: taskmanagement
 spec:
   action: pod-kill
-  mode: one
-  duration: 30s
+  mode: fixed
+  value: "2"
   selector:
     namespaces:
       - taskmanagement
